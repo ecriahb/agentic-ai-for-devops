@@ -6,6 +6,19 @@
 
 ---
 
+## 🔗 Where This Lesson Fits
+
+```text
+L06 → Handoff transfers active control
+L07 → Shared/private state + per-agent context  ← CANONICAL
+L08 → Result/evidence communication contracts
+L09 → Conflict resolution + synthesis
+```
+
+**Scope boundary:** Module 2 owns generic context engineering. Module 8 owns single-graph state schemas/reducers. This lesson specializes those ideas for **cross-agent visibility, context projection, ownership and leakage control**.
+
+---
+
 # 🎯 Lesson Goal
 
 Aap samjhoge:
@@ -63,6 +76,8 @@ Bad shared field:
 "all_agent_internal_reasoning": [...]
 ```
 
+Shared state should contain only what another component legitimately needs.
+
 ---
 
 # PART 3 — Private Specialist State
@@ -79,7 +94,7 @@ intermediate hypotheses
 
 These do not need to pollute global state.
 
-Only normalized output should cross boundary.
+Only normalized outputs should cross the boundary.
 
 ---
 
@@ -126,9 +141,13 @@ source + operation + arguments hash
 source event ID
 ```
 
+The detailed reducer mechanics are taught in Module 8; here the focus is **what should be shared and why**.
+
 ---
 
-# PART 6 — Context Engineering per Agent
+# PART 6 — Context Projection per Agent
+
+Do not treat shared state as the prompt.
 
 Terraform prompt receives:
 
@@ -148,7 +167,7 @@ all runbooks
 all other agents' model outputs
 ```
 
-This reduces noise and leakage.
+This is the multi-agent version of context engineering: **project only the minimum useful view into each specialist**.
 
 ---
 
@@ -168,6 +187,8 @@ Example:
 def build_terraform_context(state):
     return select_relevant_fields(state)
 ```
+
+Different agents can therefore see different projections of the same workflow state.
 
 ---
 
@@ -191,6 +212,8 @@ SECRET
 
 and enforce context projection.
 
+This is application-level data minimization, not a prompt trick.
+
 ---
 
 # PART 9 — State Ownership
@@ -204,7 +227,16 @@ Validator owns validation_status.
 Human approval node owns approval_decision.
 ```
 
-Avoid multiple agents casually mutating same control field.
+Avoid multiple agents casually mutating the same control field.
+
+For every shared field define:
+
+```text
+owner
+allowed writers
+merge rule
+trust class
+```
 
 ---
 
@@ -254,7 +286,7 @@ It increases token cost, confusion, privacy risk and accidental contamination.
 No. State is application data; each agent should receive a carefully projected context view.
 
 ### Q4. How handle parallel state updates?
-Use explicit reducer/merge semantics with stable IDs and deduplication.
+Use explicit reducer/merge semantics with stable IDs and deduplication; the detailed graph reducer design belongs to Module 8.
 
 ---
 
@@ -280,7 +312,7 @@ Create a `MultiAgentIncidentState` with:
 - authorization object
 - freshness timestamps
 
-Explain which agent may update each field.
+Explain which agent may update each field and what context projection each specialist should receive.
 
 ---
 
