@@ -4,6 +4,24 @@
 
 > **Reliable prompt ko repeatable structure do, taaki har incident me model ko same quality ka instruction contract mile.**
 
+> **Canonical ownership:** This is the definitive lesson for the five-part general prompt framework. Lesson 01 introduces the idea; later DevOps/RAG/agent lessons apply the framework without re-teaching it.
+
+## Where This Lesson Fits
+
+```text
+L01 → Why prompt engineering matters
+ ↓
+L02 → Canonical ROLE / CONTEXT / TASK / CONSTRAINTS / OUTPUT framework
+ ↓
+L03 → System vs User responsibility split
+ ↓
+L04 → Examples as behavior demonstrations
+ ↓
+L05+ → Specialized applications and reliability controls
+```
+
+**Scope rule:** Context-engineering implementation belongs to Lesson 07; structured-output implementation/validation belongs to Module 1 Lesson 07. This lesson defines the prompt contract, not those downstream mechanisms.
+
 ---
 
 # 🎯 Lesson Goal
@@ -133,6 +151,8 @@ All 100,000 lines from every cluster log for the last 30 days
 
 More context is not automatically better.
 
+**The detailed selection, normalization, redaction, prioritization and budgeting procedure is owned by Lesson 07 — Context Engineering. Here, context is treated as an input slot in the prompt contract.**
+
 ---
 
 # 5. TASK
@@ -219,6 +239,8 @@ But remember:
 Valid JSON != correct facts
 ```
 
+Detailed schema validation remains in **Module 1 Lesson 7**; this lesson establishes the output-contract design principle.
+
 ---
 
 # 8. Full DevOps Prompt
@@ -277,6 +299,8 @@ Example:
 ```
 
 R1 does not prove NSG caused current incident.
+
+This distinction is applied more deeply in Module 5 RAG; this lesson only establishes the prompt-level separation.
 
 ---
 
