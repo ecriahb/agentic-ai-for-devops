@@ -11,20 +11,24 @@
 You will understand:
 
 - deterministic vs probabilistic controls
-- input, retrieval, tool, output and action gates
+- the difference between a guardrail and an underlying security control
+- input, retrieval, tool, output and action policy gates
 - policy decision contracts
 - deny/allow/approval-required states
 - authorization integration
-- confidence and evidence gates
-- rate/loop budgets
+- evidence gates and budgets
 - fail-closed behavior
 - policy observability and tests
+
+> **Ownership boundary:** Lessons 02–07 explain the specific attack surfaces. This lesson does not re-teach prompt injection, tool abuse, RAG poisoning, MCP security or multi-agent security in depth. It defines the **common enforcement layer** that applies to all of them.
 
 ---
 
 # PART 1 — English Definition
 
 **A deterministic guardrail is application logic that enforces a repeatable rule independently of the LLM's willingness or interpretation.**
+
+A **policy gate** is a decision point that evaluates trusted inputs and returns an explicit enforcement state such as `ALLOW`, `DENY`, `APPROVAL_REQUIRED`, or `INSUFFICIENT_EVIDENCE`.
 
 ---
 
@@ -45,6 +49,13 @@ if tool_name not in allowed_tools:
 
 The second is enforceable and testable.
 
+Golden rule:
+
+```text
+Prompt = guidance
+Policy code = enforcement
+```
+
 ---
 
 # PART 3 — Guardrail Stack
@@ -54,28 +65,30 @@ Input Gate
  ↓
 Identity / Authorization Gate
  ↓
-Retrieval ACL/Freshness Gate
+Retrieval Eligibility Gate
  ↓
 Tool Selection Gate
  ↓
-Argument/Target Gate
+Argument / Target Gate
  ↓
 Execution Risk Gate
  ↓
-Output/Citation Gate
+Output / Citation Gate
  ↓
 Approval Gate
  ↓
 Post-Action Verification
 ```
 
-Defense in depth.
+Each layer consumes a different trusted signal. A later layer must not silently assume an earlier layer succeeded.
+
+Domain-specific controls are taught in Lessons 02–07 and are connected here through explicit gates.
 
 ---
 
 # PART 4 — Policy Decision Contract
 
-Prefer enum-like outputs:
+Prefer machine-readable outcomes:
 
 ```text
 ALLOW
@@ -83,6 +96,7 @@ DENY
 APPROVAL_REQUIRED
 INSUFFICIENT_EVIDENCE
 RETRYABLE_FAILURE
+POLICY_UNAVAILABLE
 ```
 
 Avoid only prose:
@@ -91,18 +105,28 @@ Avoid only prose:
 "This seems mostly safe."
 ```
 
+Policy decisions should also include a stable reason code, for example:
+
+```json
+{
+  "decision": "DENY",
+  "reason_code": "TOOL_NOT_ALLOWLISTED",
+  "policy_version": "p7"
+}
+```
+
 ---
 
 # PART 5 — Input Gate
 
-Validate:
+Validate trusted application inputs before model/tool execution:
 
 ```text
-request length
+request size
 supported intent
 environment
 resource identifiers
-encoding/content limits
+content limits
 caller identity
 ```
 
@@ -113,11 +137,13 @@ if environment not in {"dev", "stage", "production"}:
     return "INVALID_ENVIRONMENT"
 ```
 
+This does not replace domain-specific input validation elsewhere; it establishes the common policy pattern.
+
 ---
 
 # PART 6 — Retrieval Gate
 
-Before context:
+Before context reaches the model:
 
 ```text
 caller authorized?
@@ -129,11 +155,13 @@ metadata complete?
 
 No policy → no document in prompt.
 
+Lesson 05 owns the detailed RAG attack/poisoning mechanics; this lesson owns the **enforcement decision point**.
+
 ---
 
 # PART 7 — Evidence Gate
 
-Required for current RCA:
+For a workflow that requires current evidence:
 
 ```python
 required = {"E1", "E2", "E3"}
@@ -142,7 +170,7 @@ if not required.issubset(current):
     return "INSUFFICIENT_EVIDENCE"
 ```
 
-This prevents model from filling gaps.
+This prevents the model from filling evidence gaps with guesses.
 
 ---
 
@@ -150,13 +178,22 @@ This prevents model from filling gaps.
 
 ```python
 ALLOWED_TOOLS_BY_AGENT = {
-  "pipeline": {"get_pipeline_status"},
-  "terraform": {"get_terraform_changes"},
-  "aks": {"get_aks_status"},
+    "pipeline": {"get_pipeline_status"},
+    "terraform": {"get_terraform_changes"},
+    "aks": {"get_aks_status"},
 }
 ```
 
-Tool must be allowed for both caller/agent and task/environment.
+A tool must be allowed for:
+
+```text
+caller/agent
+task
+environment
+resource scope
+```
+
+Lesson 03 owns the detailed tool-abuse threat model; this lesson turns those requirements into an explicit gate.
 
 ---
 
@@ -176,6 +213,10 @@ environment
 
 Valid JSON can still be unsafe.
 
+```text
+Schema validation != authorization
+```
+
 ---
 
 # PART 10 — Risk Gate
@@ -189,7 +230,7 @@ HIGH_RISK_WRITE    → approval required
 DESTRUCTIVE        → deny or special break-glass path
 ```
 
-Model does not select the risk class.
+The model does not select the authoritative risk class.
 
 ---
 
@@ -207,23 +248,23 @@ secret leakage
 unsafe executable content
 ```
 
-Output failure becomes explicit status.
+The output gate should reuse the security and evaluation contracts defined earlier rather than inventing a second validation model.
 
 ---
 
-# PART 12 — Confidence Gate
+# PART 12 — Confidence / Evidence Gate
 
-Host computes confidence from evidence policy.
+Host computes decision quality from evidence policy.
 
 Example:
 
 ```text
-missing evidence → LOW
-full sequence, no direct mechanism verification → MEDIUM
-direct multi-source verification → HIGH
+missing evidence → INSUFFICIENT_EVIDENCE
+complete but indirect evidence → REVIEW / MEDIUM
+multiple authoritative observations align → ALLOW analysis completion
 ```
 
-LLM may explain confidence but not override host rubric.
+The LLM may explain confidence, but it does not override the host rubric.
 
 ---
 
@@ -236,18 +277,18 @@ policy classifies HIGH_RISK
  ↓
 authorization check
  ↓
-approval request bound to exact action
+approval request bound to exact action/target
  ↓
 resume
  ↓
 revalidate
 ```
 
-No raw `approved=True` shared forever.
+Approval is an input to policy, not a permanent boolean that any future action can reuse.
 
 ---
 
-# PART 14 — Loop/Cost Gate
+# PART 14 — Loop / Cost Gate
 
 ```python
 if iterations >= max_iterations:
@@ -256,7 +297,7 @@ if tool_calls >= max_tool_calls:
     return "TOOL_BUDGET_EXCEEDED"
 ```
 
-Also limit:
+Also bound:
 
 ```text
 tokens
@@ -265,7 +306,7 @@ parallel calls
 retrieved context size
 ```
 
-Security and FinOps reinforce each other.
+These limits are enforcement controls, not model suggestions.
 
 ---
 
@@ -283,7 +324,9 @@ Result:
 DENY / POLICY_UNAVAILABLE
 ```
 
-Never infer permission.
+Never infer permission from an unavailable authorization/policy dependency.
+
+For low-risk read paths, any degraded behavior must be explicitly classified and tested.
 
 ---
 
@@ -295,9 +338,9 @@ Store versioned rules:
 policy_version=p7
 ```
 
-Test in CI.
+Test them in CI.
 
-Audit records include policy version so decisions are reproducible.
+Audit records should include policy version so decisions are reproducible.
 
 ---
 
@@ -309,9 +352,10 @@ P-02 read prod status with read role → ALLOW
 P-03 Terraform apply from investigator → DENY
 P-04 approved exact NSG restore → ALLOW executor
 P-05 approval target mismatch → DENY
-P-06 missing evidence → no remediation proposal
+P-06 missing evidence → INSUFFICIENT_EVIDENCE
 P-07 cross-tenant retrieval → DENY
 P-08 loop budget exceeded → TERMINATE
+P-09 policy dependency unavailable for high-risk action → DENY
 ```
 
 ---
@@ -354,18 +398,21 @@ if policy == APPROVAL_REQUIRED:
     pause()
 ```
 
+The executor receives only a policy-approved request.
+
 ---
 
 # PART 20 — Common Mistakes
 
-- all guardrails implemented in prompt
-- no explicit policy status codes
-- schema check only
+- all controls implemented in prompt text
+- prose-only policy decisions
+- schema validation treated as authorization
 - approval not bound to exact target
-- missing policy service fails open
+- missing policy dependency fails open
 - loop/cost has no limits
-- model chooses own confidence/risk class
+- model chooses authoritative risk class
 - policy changes not versioned/tested
+- every security lesson duplicates its own gate instead of using a common enforcement layer
 
 ---
 
@@ -374,7 +421,7 @@ if policy == APPROVAL_REQUIRED:
 ### Q1. What should be deterministic in an agent?
 Authorization, capability allowlists, argument validation, risk policy, approval requirements, budgets and critical output validation.
 
-### Q2. Why not let LLM decide policy?
+### Q2. Why not let the LLM decide policy?
 LLM outputs are probabilistic and vulnerable to prompt manipulation; critical boundaries need repeatable enforcement.
 
 ### Q3. What is fail-closed behavior?
@@ -390,6 +437,7 @@ Version policy, emit structured reason codes and record decisions with caller/ac
 ```text
 LLM = Proposal / Reasoning
 Policy Engine = Permission / Safety Decision
+Guardrail = Enforceable control
 ```
 
 ---
@@ -402,4 +450,4 @@ Create 12 policy test cases for the final DevOps AI Assistant and mark which are
 
 # 🔁 Next Lesson Kyu?
 
-We now have controls. Next we measure whether the agent behaves correctly through **agent evaluation fundamentals**.
+We now have explicit enforcement. Next we measure the agent against expected behavior through **evaluation**; security-specific adversarial testing comes immediately after.
