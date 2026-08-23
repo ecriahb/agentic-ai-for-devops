@@ -2,6 +2,8 @@
 
 > **Ab tak ke saare pieces ko ek architecture me jodenge: load → chunk → embed → index → query → retrieve.**
 
+> **Lesson ownership:** Lesson 08 owns chunking strategy, Lesson 09 owns practical metadata schema/filter design, and Lesson 06 owns the deeper pre-filter vs post-filter retrieval semantics. This lesson integrates those concepts into the end-to-end lifecycle instead of re-teaching them.
+
 ---
 
 ## 🎯 Lesson Goal
@@ -34,9 +36,9 @@ Load
       ↓
 Clean / Validate
       ↓
-Chunk
+Chunk (Lesson 08)
       ↓
-Attach Metadata
+Attach Metadata (Lesson 09)
       ↓
 Embed
       ↓
@@ -127,6 +129,8 @@ not secret dump
 Document → chunk-0, chunk-1, chunk-2...
 ```
 
+**Detailed strategy belongs to Lesson 08.**
+
 ## Step 4 — Metadata
 
 ```json
@@ -136,6 +140,8 @@ Document → chunk-0, chunk-1, chunk-2...
   "service": "aks"
 }
 ```
+
+**Metadata schema/filter design belongs to Lesson 09.**
 
 ## Step 5 — Embed
 
@@ -264,6 +270,8 @@ Step-by-step:
 8. Optionally reject weak results
 9. Return retrieval result
 ```
+
+**The intended metadata eligibility rules come from the application's trusted scope. Lesson 09 covers the metadata design; Lesson 06 covers the implementation-level pre/post-filter semantics.**
 
 No LLM generation required yet.
 
@@ -407,6 +415,16 @@ Git / Wiki / Runbooks / Postmortems
  Source + Chunk + Score
 ```
 
+This architecture intentionally references the canonical owners instead of duplicating their full theory:
+
+```text
+Chunking         → Lesson 08
+Metadata design  → Lesson 09
+Pre/Post-filter  → Lesson 06
+Similarity       → Lesson 04/05
+Vector tooling   → Lesson 07
+```
+
 ---
 
 # PART 13 — Interview Corner
@@ -432,6 +450,15 @@ ONLINE / QUERY
 Query → Embedding → Filters → Search → Top-K → Sources
 ```
 
+Remember:
+
+```text
+Indexing   = prepare knowledge
+Retrieval  = find knowledge
+Metadata   = scope/context
+Similarity = relevance signal
+```
+
 ---
 
 # PART 15 — Homework
@@ -440,6 +467,7 @@ Query → Embedding → Filters → Search → Top-K → Sources
 2. Source document update hone par exact lifecycle likho.
 3. Retrieval result ke minimum 5 fields define karo.
 4. Why `Top-K=10` blindly use nahi karna chahiye?
+5. Explain where chunking, metadata and pre/post-filter semantics are taught in Module 4.
 
 ---
 
