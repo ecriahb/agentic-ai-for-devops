@@ -2,6 +2,8 @@
 
 > **Semantic similarity batata hai “meaning close hai”; metadata batata hai “ye result kis source, environment, version aur scope ka hai.”**
 
+> **Canonical boundary:** Lesson 06 introduces the retrieval concept of **pre-filter vs post-filter** inside its Metadata section. This lesson owns the **practical DevOps metadata design, filtering patterns, traceability and authorization boundary**. It does not re-teach the full pre/post-filter theory.
+
 ---
 
 ## 🎯 Lesson Goal
@@ -68,25 +70,27 @@ service = aks
 
 Then search scope becomes safer and more relevant.
 
+The actual timing semantics of the filter—pre-filter or post-filter—are covered in **Lesson 06** and depend on the chosen vector system. Here we focus on how to design the metadata itself and apply the intended scope correctly.
+
 ---
 
 # PART 3 — Filter + Vector Search
 
-Mental model:
+Mental model for the application-level contract:
 
 ```text
-All Chunks
+Allowed Scope
    ↓
-Metadata Filter
+Metadata Constraints
    ↓
-Eligible Chunks
+Eligible Knowledge
    ↓
-Vector Similarity Search
+Semantic Vector Search
    ↓
 Top-K
 ```
 
-Or implementation may combine these internally.
+A vector database may internally combine these operations differently. The application should define the **intended eligibility constraints** clearly and then verify the actual implementation semantics in the library/database documentation.
 
 Example intent:
 
@@ -94,6 +98,7 @@ Example intent:
 Find semantically similar chunks
 WHERE environment = prod
 AND service = aks
+AND status = current
 ```
 
 ---
@@ -122,6 +127,17 @@ confidentiality
 
 Do not add metadata just because possible hai. Add fields that support retrieval, governance and traceability.
 
+A useful design question for every field is:
+
+```text
+Will this field help us
+retrieve,
+trace,
+version,
+or govern
+this chunk?
+```
+
 ---
 
 # PART 5 — Source Traceability
@@ -144,9 +160,10 @@ With metadata:
 source: aks-networking.md
 section: Network Validation
 version: v4
+chunk_id: aks-networking::network-validation::03
 ```
 
-Now later RAG system source references show kar sakta hai.
+Now later RAG systems can show source references and support claim-level traceability.
 
 ---
 
@@ -164,7 +181,17 @@ results = collection.query(
 
 Then only matching metadata scope ke records candidates banenge, subject to library behavior/configuration.
 
-Multiple field logic depends on the vector store's supported filter syntax, so current docs verify karna important hai.
+Multiple-field logic depends on the vector store's supported filter syntax, so current official docs verify karna important hai.
+
+For this lesson, the important application contract is:
+
+```text
+environment = prod
+service = aks
+status = current
+```
+
+The exact execution semantics belong to the vector-store implementation.
 
 ---
 
@@ -263,7 +290,8 @@ chunks = [
             "source": "aks-networking.md",
             "service": "aks",
             "environment": "prod",
-            "status": "current"
+            "status": "current",
+            "version": "v4"
         }
     },
     {
@@ -272,14 +300,19 @@ chunks = [
             "source": "terraform-state.md",
             "service": "terraform",
             "environment": "prod",
-            "status": "current"
+            "status": "current",
+            "version": "v2"
         }
     }
 ]
 
 filtered = [
     c for c in chunks
-    if c["metadata"]["service"] == "aks"
+    if (
+        c["metadata"]["service"] == "aks"
+        and c["metadata"]["environment"] == "prod"
+        and c["metadata"]["status"] == "current"
+    )
 ]
 
 print(filtered)
@@ -298,6 +331,7 @@ First Python-side filtering samjho; vector DB filtering iska scalable/managed ve
 5. arbitrary free-text metadata without schema
 6. metadata filter ko authorization samajhna
 7. deleted source ka stale vector retain karna
+8. filter fields define karna but ingestion pipeline me consistently populate na karna
 
 ---
 
@@ -311,8 +345,6 @@ status: draft | current | deprecated
 service: aks | terraform | pipeline | networking
 ```
 
-This reduces filter bugs.
-
 Useful validation:
 
 ```text
@@ -320,7 +352,18 @@ required source
 required chunk_id
 allowed environment values
 version format
+status allowed values
 ```
+
+Agar metadata schema inconsistent hai:
+
+```text
+Prod
+production
+PROD
+```
+
+then filters silently miss relevant records.
 
 ---
 
@@ -335,6 +378,9 @@ No. Authorization must be enforced separately by trusted application/platform co
 **Q: How can stale documents harm RAG?**  
 They can be retrieved as semantically relevant even though their operational guidance is outdated.
 
+**Q: Where should you learn pre-filter vs post-filter semantics?**  
+Lesson 06 covers the retrieval theory; this lesson applies the metadata/filter contract to DevOps knowledge design.
+
 ---
 
 # PART 14 — Revision
@@ -344,15 +390,16 @@ Chunk Text
    +
 Metadata
    ↓
-Searchable + Traceable Knowledge
+Eligible + Searchable + Traceable Knowledge
 ```
 
 Remember:
 
 ```text
-Similarity = relevance signal
-Metadata   = scope/context
-Authorization = security decision
+Similarity      = relevance signal
+Metadata        = scope/context
+Authorization   = security decision
+Pre/Post filter = retrieval implementation semantics
 ```
 
 ---
@@ -362,12 +409,13 @@ Authorization = security decision
 1. 4 sample docs ke liye metadata schema design karo.
 2. `prod + aks + current` filter ka pseudo-code likho.
 3. Explain why `environment` filter security control nahi hai.
+4. Explain why inconsistent values such as `Prod` vs `prod` can break retrieval.
 
 ---
 
 # Next Lesson Kyu?
 
-Ab hum documents ko chunk, embed aur tag kar sakte hain. Ab full lifecycle connect karna hai:
+Ab metadata aur filtering contract clear hai. Next full lifecycle connect hoga:
 
 **index kaise build hota hai aur user query ka retrieval flow end-to-end kaise chalta hai?**
 
