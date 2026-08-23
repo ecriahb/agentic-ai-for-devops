@@ -2,18 +2,34 @@
 
 # Lesson 04 — Supervisor & Subagent Pattern
 
-> **Supervisor ka kaam sab kuch khud solve karna nahi; right specialist ko right context ke saath invoke karna aur results ko control karna hai.**
+> **Supervisor ka kaam sab kuch khud solve karna nahi; right specialist ko right context ke saath invoke karna aur results ko coordinate karna hai.**
+
+---
+
+## 🔗 Where This Lesson Fits
+
+```text
+L01 → Why multi-agent?
+L02 → Pattern overview
+L03 → Specialist boundaries/contracts
+L04 → Supervisor + subagents  ← CANONICAL
+L05 → Router + parallel specialists
+```
+
+**Scope boundary:** L02 patterns ka comparison deta hai; L04 supervisor delegation ko deeply implement karta hai. L08 later result contracts ko own karta hai. Module 8 ka supervisor/subgraph material yahan multi-agent coordination ke context me specialized hai; state/checkpoint fundamentals wapas nahi padhaye ja rahe.
 
 ---
 
 # 🎯 Lesson Goal
 
 Aap samjhoge:
+
 - supervisor pattern ka mental model
 - subagents as tools/nodes
-- centralized memory/context
+- centralized coordination
 - delegation contract
-- parallel vs sequential subagents
+- sequential vs parallel delegation
+- supervisor state
 - supervisor failure modes
 - DevOps implementation pattern
 
@@ -33,7 +49,7 @@ Supervisor
 Supervisor / Synthesis
 ```
 
-Subagent typically user se direct baat nahi karta; result supervisor ko return karta hai.
+Subagent usually user se direct baat nahi karta; result supervisor ko return karta hai.
 
 ---
 
@@ -43,8 +59,8 @@ Useful when:
 - task spans multiple domains
 - repeated delegation needed
 - one coordinator should own overall workflow
-- subagents are focused and stateless/per-invocation
-- centralized conversation state desired
+- subagents are focused
+- centralized incident state desired
 
 Not useful when:
 
@@ -93,7 +109,7 @@ normalized result
 Supervisor state
 ```
 
-This is similar to Module 1 tool calling, but now the capability itself contains reasoning/workflow.
+This is similar to Module 1 tool calling, but the capability itself now contains reasoning/workflow.
 
 Still:
 
@@ -104,7 +120,7 @@ host policy decides what runs
 
 ---
 
-# PART 5 — Stateless Subagents
+# PART 5 — Stateless Subagents by Default
 
 For many cases:
 
@@ -121,7 +137,7 @@ Benefits:
 
 Supervisor keeps durable incident state.
 
-If a specialist truly needs multi-turn state, use explicit subgraph persistence, not accidental chat history.
+If a specialist truly needs multi-turn state, use explicit bounded state—not accidental chat history.
 
 ---
 
@@ -130,7 +146,7 @@ If a specialist truly needs multi-turn state, use explicit subgraph persistence,
 ```text
 Supervisor
  ↓
-Pipeline Agent → says failure during terraform_apply
+Pipeline Agent → failure during terraform_apply
  ↓
 Supervisor
  ↓
@@ -147,7 +163,7 @@ This is evidence-driven multi-hop coordination.
 
 # PART 7 — Parallel Delegation
 
-If domains independent:
+If domains are independent:
 
 ```text
 Pipeline Agent ─┐
@@ -162,7 +178,9 @@ But requires:
 - deterministic result merge
 - stable evidence IDs
 - independent tool scopes
-- error handling per branch
+- branch-level failure handling
+
+The detailed router/fan-out mechanics belong to **L05**; here we focus on the supervisor's coordination decision.
 
 ---
 
@@ -183,26 +201,31 @@ Example:
 
 Do not store hidden chain-of-thought.
 
-Store decisions/results needed for workflow.
+Store workflow decisions/results required to coordinate the team.
 
 ---
 
-# PART 9 — Supervisor Safety
+# PART 9 — Supervisor Policy Boundary
 
-Supervisor should NOT decide:
-- user authorization
-- whether prod write access is allowed
-- whether evidence source is authentic purely by reasoning
-
-Application policy should enforce:
+Supervisor may decide:
 
 ```text
-allowed_subagents
-allowed_tools_per_subagent
-max_delegations
-max_parallel_calls
-approval gates
+which approved specialist to call
+what focused task to delegate
+whether known evidence gaps remain
+whether synthesis can start
 ```
+
+Supervisor must NOT own:
+
+```text
+user authorization
+backend RBAC
+production write approval
+source authenticity as a reasoning claim
+```
+
+Those stay in trusted application/policy layers.
 
 ---
 
@@ -217,17 +240,19 @@ Supervisor → A → Supervisor → A → ...
 Guard:
 
 ```text
-max_iterations + duplicate task detection
+max iterations
+max delegations
+duplicate-task detection
 ```
 
 ## Delegation ambiguity
 
-Two specialists both investigate same domain.
+Two specialists both investigate the same domain.
 
 Guard:
 
 ```text
-responsibility map
+responsibility map from L03
 ```
 
 ## Result trust
@@ -238,7 +263,9 @@ Subagent says:
 "Root cause definitely NSG"
 ```
 
-Supervisor must inspect evidence IDs, not trust confidence language.
+Supervisor must inspect structured findings/evidence IDs, not confidence language alone.
+
+The standardized result contract is covered in **L08**.
 
 ---
 
@@ -259,23 +286,43 @@ Deterministic supervisor is a great learning baseline before LLM-driven delegati
 
 ---
 
-# PART 12 — Interview Q&A
+# PART 12 — DevOps Example
+
+```text
+Incident
+ ↓
+Supervisor checks current evidence
+ ↓
+E1 missing → Pipeline specialist
+ ↓
+E1 found, E2 missing → Terraform specialist
+ ↓
+E2 found, E3 missing → AKS specialist
+ ↓
+E1/E2/E3 present → Synthesis
+```
+
+The supervisor controls **who runs next**; specialist logic remains inside specialist boundaries.
+
+---
+
+# PART 13 — Interview Q&A
 
 ### Q1. What does a supervisor do?
-Coordinates specialist agents, controls delegation/context, tracks state, and integrates results.
+Coordinates specialist agents, controls delegation/context, tracks progress and decides which approved specialist should run next.
 
 ### Q2. Why keep subagents stateless by default?
 To isolate context and reduce memory contamination when each invocation is independent.
 
 ### Q3. Supervisor vs router?
-Supervisor can coordinate repeatedly across steps; router usually dispatches once.
+Supervisor can coordinate repeatedly across steps; router usually performs bounded dispatch. Detailed router/parallel behavior is L05.
 
 ### Q4. How do you prevent supervisor loops?
-Iteration limits, duplicate-task detection, progress metrics and explicit termination states.
+Application-controlled iteration/delegation limits, duplicate-task detection and explicit terminal states.
 
 ---
 
-# PART 13 — Revision
+# PART 14 — Revision
 
 ```text
 Supervisor = coordinator
@@ -287,16 +334,17 @@ Policy = outside model reasoning
 
 ---
 
-# PART 14 — Homework
+# PART 15 — Homework
 
 Design a supervisor decision table for E1/E2/E3 evidence collection. Add conditions for:
 - tool timeout
 - specialist failure
 - duplicate finding
 - enough evidence
+- max delegations reached
 
 ---
 
 # 🔁 Next Lesson Kyu?
 
-Supervisor handles multi-hop coordination. Next hum **Router + Parallel Agents** dekhenge jahan independent investigations simultaneously execute ho sakte hain.
+Supervisor handles repeated delegation. Next we’ll study **Router + Parallel Specialists**, where independent work can be dispatched and merged deterministically.
