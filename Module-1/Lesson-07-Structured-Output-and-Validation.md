@@ -4,6 +4,23 @@
 
 ---
 
+## Where This Lesson Fits
+
+```text
+Lesson 06
+Tokens + context capacity
+      ↓
+Lesson 07
+Structured output + validation
+      ↓
+Lesson 08
+Tool calling
+```
+
+**This lesson owns the application-level structured-output contract and layered validation foundation. It does not own the complete evaluation/red-team discipline (Module 10) or final RAG evaluation (Module 5).**
+
+---
+
 # 1. English Definitions
 
 **Structured Output:** A model response constrained to a defined machine-readable structure so software can parse and consume it reliably.
@@ -484,6 +501,8 @@ Approved Application State
 → Human Approval
 → Controlled Executor
 ```
+
+For deeper evaluation/red-team methodology, see **Module 10**. This lesson establishes the validation layers that later evaluations test.
 
 ---
 
