@@ -2,7 +2,7 @@
 
 # Lesson 03 — HTTP Methods, Request & Response
 
-> **API fail hone par error SDK me dikhta hai, lekin root cause aksar HTTP layer me hota hai.**
+> **API abstraction samajhne ke baad ab wire-level behavior dekhenge: HTTP request actually kaise banti hai, response ko kaise diagnose karte hain, aur retry/idempotency ka kya role hai.**
 
 ---
 
@@ -21,7 +21,27 @@ Aap samjhoge:
 
 ---
 
-## 1. HTTP Kya Hai?
+## 1. Where This Lesson Fits
+
+```text
+Lesson 01 — API Fundamentals
+        ↓
+What is an API / client / server / endpoint?
+        ↓
+Lesson 02 — REST API Basics
+        ↓
+Resources + REST design style
+        ↓
+Lesson 03 — HTTP Mechanics  ← YOU ARE HERE
+        ↓
+Method + headers + body + status + retry semantics
+```
+
+**Boundary:** Lesson 01 owns the API abstraction. This lesson owns the HTTP transport semantics. JSON details are covered in Lesson 04, and authentication details in Lesson 05.
+
+---
+
+## 2. HTTP Kya Hai?
 
 **English Definition:**
 > HTTP is an application-layer protocol used to exchange requests and responses between clients and servers.
@@ -40,7 +60,7 @@ HTTPS same communication ko TLS encryption ke saath protect karta hai.
 
 ---
 
-## 2. HTTP Methods
+## 3. HTTP Methods
 
 ### GET — Read
 
@@ -70,9 +90,11 @@ Specific fields change karna.
 
 Resource delete karna.
 
+The exact semantics of a method come from the API contract; HTTP method name alone does not tell you the complete business behavior.
+
 ---
 
-## 3. HTTP Request Anatomy
+## 4. HTTP Request Anatomy
 
 ```text
 METHOD + URL
@@ -113,9 +135,11 @@ Body actual payload ho sakta hai:
 }
 ```
 
+**JSON syntax itself is intentionally covered in Lesson 04.**
+
 ---
 
-## 4. HTTP Response Anatomy
+## 5. HTTP Response Anatomy
 
 ```text
 Status Code
@@ -132,9 +156,11 @@ Content-Type: application/json
 {"result":"Deployment failed during Terraform apply"}
 ```
 
+A successful HTTP status does not automatically mean the business operation succeeded; the response body/application status may still need validation.
+
 ---
 
-## 5. Status Code Families
+## 6. Status Code Families
 
 | Family | Meaning | Example |
 |---|---|---|
@@ -157,9 +183,11 @@ Content-Type: application/json
 
 **500/502/503** — provider/server/upstream failure; often retry strategy relevant.
 
+Detailed credential semantics belong to Lesson 05; here they are used as part of HTTP diagnosis.
+
 ---
 
-## 6. 401 vs 403
+## 7. 401 vs 403
 
 Common interview/debugging question:
 
@@ -168,9 +196,11 @@ Common interview/debugging question:
 403 → I know who you are, but you cannot do this. Authorization failed.
 ```
 
+We will study credentials and least privilege in Lesson 05.
+
 ---
 
-## 7. Idempotency — Basic Idea
+## 8. Idempotency — Basic Idea
 
 **English Definition:**
 > An idempotent operation can be repeated without creating additional unintended state changes after the first successful application.
@@ -180,6 +210,8 @@ GET is normally safe to repeat.
 A POST that creates a deployment may not be safe to retry blindly because duplicate execution could happen.
 
 For AI inference, repeating a failed request may be operationally safe in many cases, but it still costs tokens and may produce a different output. So retry policy should understand the operation.
+
+This concept becomes important again in Lesson 10 when we design bounded retry behavior.
 
 ---
 
@@ -238,6 +270,7 @@ Don't immediately conclude "LLM problem".
 - timeout specify na karna
 - destructive POST/DELETE blindly retry karna
 - response body read kiye bina sirf status code print karna
+- Lesson 01 API abstraction ko HTTP wire-level behavior ke saath confuse karna
 
 ---
 
@@ -251,6 +284,6 @@ Start with endpoint and method, inspect the HTTP status code and response body, 
 
 # 🔁 Why Next Lesson?
 
-HTTP body me data kaise encode hota hai? AI APIs me mostly JSON dikhega.
+HTTP body me structured data kaise encode hota hai? AI APIs me mostly **JSON** dikhega.
 
 > **Lesson 04 — JSON for AI Applications**
