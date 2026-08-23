@@ -4,6 +4,8 @@
 
 > **Human ke liye paragraph enough ho sakta hai; application ke liye predictable fields chahiye.**
 
+> **Canonical boundary:** Module 1 introduced structured output as an application safety pattern. **Module 3 focuses on the API/data-contract layer**: JSON response shapes, schema transport, parsing and provider structured-output capabilities. Deep evidence/claim validation remains with Module 1's trusted-RCA pattern and later evaluation/security modules.
+
 ---
 
 ## 🎯 Lesson Goal
@@ -13,9 +15,9 @@ Aap samjhoge:
 - free-form text vs structured data
 - JSON output
 - schema kya hota hai
-- Pydantic validation
+- provider-side structured output concept
+- Pydantic as a local application validator
 - structure validation vs truth validation
-- enum/required fields
 - parsing failures
 - evidence-grounded RCA contract
 
@@ -89,6 +91,8 @@ JSON format
 Schema validation
 ```
 
+Detailed JSON syntax/serialization belongs to Lesson 04; this lesson applies it to AI response contracts.
+
 ---
 
 ## 4. Schema Kya Hai?
@@ -137,6 +141,8 @@ rca = IncidentRCA.model_validate({
 print(rca.model_dump())
 ```
 
+Here Pydantic is the **application-side shape/type validator**.
+
 ---
 
 ## 6. Validation Failure
@@ -153,13 +159,11 @@ IncidentRCA.model_validate({
 
 Pydantic rejects invalid enum/type according to schema.
 
-This prevents invalid data from silently entering downstream systems.
+This prevents malformed structured data from silently entering downstream systems.
 
 ---
 
 ## 7. Critical Principle: Structure ≠ Truth
-
-This is one of the most important lessons from Module 1.
 
 Model can produce perfectly valid schema:
 
@@ -173,7 +177,7 @@ Model can produce perfectly valid schema:
 }
 ```
 
-But if evidence never mentioned database corruption, it is hallucination.
+But if evidence never mentioned database corruption, it is unsupported.
 
 Therefore:
 
@@ -192,6 +196,8 @@ Structured Output Validation
          +
 Evidence / Business Validation
 ```
+
+The second layer is not solved by JSON/Pydantic alone.
 
 ---
 
@@ -233,30 +239,29 @@ Schema Guardrail
 Application Guardrail
 ```
 
+The application guardrail owns factual trust decisions; the schema owns data shape.
+
 ---
 
 ## 9. Provider-Side Structured Outputs
 
-Modern LLM APIs may support provider-side structured output/schema features. Where supported, prefer an explicit schema contract rather than asking only "please return JSON".
+Modern LLM APIs may support provider-side structured output/schema features.
 
-Current OpenAI documentation distinguishes structured JSON-schema output from older JSON-only mode and recommends schema-based Structured Outputs for supported models.
+For supported providers/models, an explicit schema contract can reduce parsing ambiguity compared with simply asking:
 
-Even then:
+```text
+"Please return JSON"
+```
 
-> Provider schema adherence does not prove factual correctness.
+But provider capabilities and syntax vary by model/API version, so current official provider documentation is the source of truth.
+
+Even perfect schema adherence does not prove factual correctness.
 
 ---
 
 ## 10. Parsing Strategy
 
-Bad:
-
-```python
-text = model_response
-# regex everything and hope fields exist
-```
-
-Better:
+Preferred flow:
 
 ```text
 Provider structured-output feature (if supported)
@@ -277,6 +282,16 @@ data = json.loads(raw_text)
 rca = IncidentRCA.model_validate(data)
 ```
 
+Handle:
+
+```text
+malformed JSON
+missing fields
+wrong types
+unsupported enum values
+provider refusal/error
+```
+
 ---
 
 # 🛠️ DevOps Example
@@ -290,23 +305,43 @@ Structured RCA
  ↓
 Pydantic
  ↓
-Evidence validation
+Evidence/business validation
  ↓
 Ticket / Slack / Dashboard / Pipeline Gate
 ```
 
-This is what makes AI output machine-consumable.
+The schema makes the API result machine-consumable; downstream policy decides whether the claims are trusted.
+
+---
+
+## 🔗 Module Boundary
+
+```text
+Module 1
+→ structured-output safety + trusted RCA architecture
+
+Module 2
+→ prompt/output-contract design
+
+Module 3 — this lesson
+→ API/data-contract parsing + schema transport
+
+Later security/evaluation modules
+→ broader claim validation, adversarial testing and release gates
+```
+
+This prevents Module 3 from becoming a second full structured-RCA security course.
 
 ---
 
 # ❌ Common Mistakes
 
 - "return JSON" ko sufficient validation samajhna
-- schema validation ko hallucination protection samajhna
+- Pydantic ko hallucination detector samajhna
 - missing required fields accept karna
-- severity free-form rakhna
+- provider schema support ko universal assume karna
 - model-generated confidence blindly trust karna
-- raw output directly deployment automation me execute karna
+- raw structured output directly deployment automation me execute karna
 
 ---
 
@@ -314,12 +349,40 @@ This is what makes AI output machine-consumable.
 
 **Q: What is the difference between structured output and validated truth?**
 
-Structured output ensures the data follows an expected shape. Truth validation separately verifies whether the claims are supported by trusted evidence and business rules.
+Structured output ensures the data follows an expected shape. Truth validation separately verifies whether claims are supported by trusted evidence and business rules.
+
+**Q: Why use provider-side schema features?**
+
+When supported, they reduce ambiguity in the model-to-application data contract, but they do not replace application-side validation.
+
+---
+
+# 🧠 Revision
+
+```text
+JSON
+  ↓
+Schema
+  ↓
+Parse
+  ↓
+Pydantic / Application Validation
+  ↓
+Business / Evidence Validation
+```
+
+Core rule:
+
+```text
+Valid structure != valid fact
+```
 
 ---
 
 # 🔁 Why Next Lesson?
 
-Ab saare building blocks ready hain. Final lesson me complete app banayenge:
+Ab API, HTTP, JSON, auth, configuration, Python, provider differences, errors and structured responses connect ho gaye.
+
+Ab in sab ko ek **first complete AI application** mein integrate karenge.
 
 > **Lesson 12 — Mini Project: First AI Application**
