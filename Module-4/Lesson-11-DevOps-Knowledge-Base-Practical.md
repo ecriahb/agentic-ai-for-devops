@@ -2,6 +2,8 @@
 
 > **Ab hum actual local DevOps documents ko searchable semantic knowledge base me convert karenge.**
 
+> **Practical boundary:** Lessons 01–10 teach the individual concepts and lifecycle. This lesson is the **first integrated practical**: load real local DevOps documents, apply the existing chunk/metadata/embedding/index rules, and observe retrieval. It does not introduce a new retrieval theory layer or RAG generation.
+
 ---
 
 ## 🎯 Lesson Goal
@@ -88,13 +90,13 @@ Load
       ↓
 Validate
       ↓
-Chunk
+Chunk  ← Lesson 08 rules
       ↓
-Metadata
+Metadata  ← Lesson 09 schema/filter rules
       ↓
 Sentence Embeddings
       ↓
-FAISS Index
+FAISS Index  ← Lesson 07 tooling
       ↓
 User Query
       ↓
@@ -104,6 +106,8 @@ Top-K Search
       ↓
 Source + Chunk + Score
 ```
+
+The point is integration. The detailed theory remains in the canonical lessons rather than being re-taught here.
 
 ---
 
