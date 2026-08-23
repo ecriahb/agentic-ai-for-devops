@@ -2,6 +2,8 @@
 
 > **Module 4 ka final project: local DevOps documents ko traceable semantic search application me convert karna.**
 
+> **Project boundary:** Lesson 11 is the guided first integrated practical. Lesson 12 is the **acceptance/capstone pass**: repeat the full pipeline, validate retrieval quality, run failure/security checks, and document the production upgrade path. It still stops at retrieval and does not generate an LLM/RAG answer; that belongs to Module 5.
+
 ---
 
 ## 🎯 Final Project Outcome
