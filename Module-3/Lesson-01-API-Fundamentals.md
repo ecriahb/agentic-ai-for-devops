@@ -2,7 +2,9 @@
 
 # Lesson 01 — API Fundamentals
 
-> **API ko samjhe bina AI API call sirf copy-paste lagti hai. API samajh aane ke baad poora flow clear ho jata hai.**
+> **API ko samjhe bina AI API call sirf copy-paste lagti hai. API samajh aane ke baad poora software-to-software flow clear ho jata hai.**
+
+> **Canonical boundary:** Module 1 introduced API use from an application perspective. **Module 3 is the canonical deep-dive for general API mechanics**: client/server, endpoints, contracts, REST, HTTP, JSON, authentication, errors and provider integration. Later modules reference these mechanics instead of re-teaching them.
 
 ---
 
@@ -131,6 +133,8 @@ Example idea:
 }
 ```
 
+At this lesson, request/response are concepts. **Wire-level HTTP mechanics are deliberately left to Lesson 03**, where methods, headers, status codes and idempotency are studied in detail.
+
 ---
 
 ## 5. Response Kya Hota Hai?
@@ -155,6 +159,8 @@ Example:
   }
 }
 ```
+
+This lesson establishes the abstraction. **Detailed HTTP response behavior belongs to Lesson 03.**
 
 ---
 
@@ -181,6 +187,8 @@ Wrong HTTP method
        ↓
 Request fails
 ```
+
+Later lessons break this contract into REST, HTTP, JSON and authentication layers.
 
 ---
 
@@ -257,13 +265,31 @@ LLM Evidence
 
 ---
 
+## 🔗 Course Boundary Map
+
+```text
+Module 1
+→ first programmatic API use
+
+Module 3 — this module
+→ general API engineering mechanics
+
+Module 4+
+→ APIs used as retrieval/tool/data sources
+```
+
+Do not turn this lesson into a second Python SDK setup tutorial; the goal is the reusable API mental model.
+
+---
+
 # ❌ Common Mistakes
 
 1. API aur application ko same cheez samajhna.
 2. SDK ko API samajhna.
 3. Endpoint aur server ko same samajhna.
 4. Request body ko poori request samajhna.
-5. Response text dekhkar status code ignore kar dena.
+5. Response text dekhkar HTTP status ignore kar dena.
+6. Module 1 ke first-call material ko API fundamentals samajhkar skip kar dena — both layers have different purposes.
 
 ---
 
@@ -295,7 +321,7 @@ Server returns Response
 
 # 🔁 Why Next Lesson?
 
-Ab hume API ka basic meaning samajh aa gaya.
+Ab API ka abstraction clear hai.
 
 But APIs ko design karne ke multiple styles hote hain. Most cloud and web APIs me aap baar-baar **REST** word dekhoge.
 
