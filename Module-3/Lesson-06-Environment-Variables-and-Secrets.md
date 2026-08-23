@@ -2,7 +2,9 @@
 
 # Lesson 06 — Environment Variables & Secret Management
 
-> **Secret ko code se separate karna basic hygiene hai; production secret management usse ek step aage hai.**
+> **Credential ka meaning Lesson 05 me samjha; ab seekhenge application ko configuration aur secrets safely runtime par kaise milte hain.**
+
+> **Canonical boundary:** Module 1 covers first-project secret hygiene while this lesson is the deeper **API-application configuration boundary**: environment variables, `.env`, CI/CD injection, secret stores and fail-fast configuration. Azure-specific identity/security architecture is referenced rather than re-taught here.
 
 ---
 
@@ -18,10 +20,11 @@ Aap samjhoge:
 - Azure Key Vault / secret manager concept
 - missing-secret validation
 - secure logging habits
+- CI/CD runtime injection
 
 ---
 
-## 1. Problem: Hard-Coded Secret
+## 1. Hard-Coded Secret Problem
 
 Bad:
 
@@ -48,7 +51,7 @@ Even private repository ko secret vault samajhna safe design nahi hai.
 **English Definition:**
 > An environment variable is a key-value value supplied to a process by its runtime environment instead of being embedded in source code.
 
-Example conceptual value:
+Example:
 
 ```text
 OPENAI_API_KEY=<secret>
@@ -62,9 +65,19 @@ import os
 api_key = os.getenv("OPENAI_API_KEY")
 ```
 
+Mental model:
+
+```text
+Runtime Environment
+      ↓
+Environment Variable
+      ↓
+Application Process
+```
+
 ---
 
-## 3. `.env` File for Local Development
+## 3. `.env` for Local Development
 
 Local file:
 
@@ -87,8 +100,10 @@ api_key = os.getenv("OPENAI_API_KEY")
 Install:
 
 ```bash
-pip install python-dotenv
+python -m pip install python-dotenv
 ```
+
+`.env` is a **development convenience**, not a security boundary or production secret-management service.
 
 ---
 
@@ -118,6 +133,8 @@ OLLAMA_BASE_URL=http://localhost:11434/v1
 
 Never put a real secret in `.env.example`.
 
+Important: if a secret was already committed, adding `.gitignore` later does not make the credential safe. Revoke/rotate the secret.
+
 ---
 
 ## 5. Validate Early
@@ -138,7 +155,7 @@ if not api_key:
     raise RuntimeError("OPENAI_API_KEY is not configured")
 ```
 
-Fail fast gives clearer debugging.
+Fail fast gives clearer debugging and prevents confusing downstream errors.
 
 ---
 
@@ -150,7 +167,7 @@ Production mental model:
 
 ```text
 Application
-    ↓ authenticated access
+    ↓ authenticated identity/access
 Secret Manager / Key Vault
     ↓
 Secret / Token
@@ -160,13 +177,13 @@ Azure example:
 
 ```text
 AKS / App Service / VM
-       ↓ Managed Identity
+       ↓ Managed Identity / Workload Identity
 Azure Key Vault
        ↓ Secret
 Application
 ```
 
-Goal: secret file ko manually server par scatter na karo.
+The exact identity mechanism is environment-specific; the important principle is to keep secret retrieval in the application/platform identity layer rather than source code.
 
 ---
 
@@ -178,30 +195,24 @@ Bad:
 print(api_key)
 ```
 
-Better debug:
+Better:
 
 ```python
 print("API key configured:", bool(api_key))
 ```
 
-Or masked display only when absolutely needed:
-
-```python
-print(api_key[:4] + "..." if api_key else "missing")
-```
-
-Even masking should be used carefully in shared logs.
+Logs, screenshots and CI/CD output are all potential exposure paths.
 
 ---
 
-## 8. CI/CD Secret Handling
+## 8. CI/CD Secret Injection
 
 Pipeline flow:
 
 ```text
 GitHub Actions / Azure DevOps
        ↓ secret store / federated identity
-Runtime environment variable
+Runtime environment or identity token
        ↓
 Application
 ```
@@ -213,6 +224,8 @@ Secret in YAML plaintext
 Secret in Terraform output
 Secret echoed in pipeline logs
 ```
+
+Prefer the platform's approved secret/identity mechanism.
 
 ---
 
@@ -243,16 +256,43 @@ print("Environment:", app_env)
 print("Secret configured:", True)
 ```
 
+Expected:
+
+```text
+Environment: dev
+Secret configured: True
+```
+
+Never print the actual key.
+
+---
+
+# 🔗 Course Boundary Map
+
+```text
+Module 1
+→ first-project secret hygiene / .env basics
+
+Module 3 — this lesson
+→ runtime configuration + API secret delivery patterns
+
+Module 10+
+→ comprehensive security, threat and control analysis
+```
+
+This lesson should not re-teach full identity/RBAC security design from later security modules.
+
 ---
 
 # ❌ Common Mistakes
 
 - `.env` ko commit kar dena
 - key ko README/code screenshot me expose karna
-- secret ko Terraform output me `sensitive` controls ke bina show karna
 - production me unmanaged `.env` files spread karna
 - secret missing hone par unclear error
 - logs me token print karna
+- `.gitignore` ko already-committed secret cleanup samajhna
+- configuration aur authorization ko same concept samajhna
 
 ---
 
@@ -260,12 +300,38 @@ print("Secret configured:", True)
 
 **Q: Is `.env` a production secret manager?**
 
-No. It is mainly a convenient local-development pattern. Production systems should prefer managed secret stores or workload identity mechanisms with controlled access and auditing.
+No. It is mainly a local-development pattern. Production systems should prefer managed secret stores or workload identity mechanisms with controlled access and auditing.
+
+**Q: Why fail fast on missing configuration?**
+
+To stop the application before it reaches a later, less-obvious authentication or integration failure.
+
+---
+
+# 🧠 Revision
+
+```text
+Secret meaning
+    ↓
+Lesson 05
+
+Secret/config delivery
+    ↓
+Lesson 06
+
+API usage
+    ↓
+Lesson 08+
+```
+
+Core rule:
+
+> **Keep secrets out of source code, logs, prompts and model context.**
 
 ---
 
 # 🔁 Why Next Lesson?
 
-Ab API, HTTP, JSON aur secrets samajh gaye. In sab ko glue karne ke liye hume minimal Python chahiye — full Python course nahi.
+Ab API client ko configuration safely mil sakti hai. In concepts ko glue karne ke liye hume sirf wahi Python chahiye jo AI application read, debug aur modify karne ke liye essential hai.
 
 > **Lesson 07 — Minimal Python for AI Applications**
