@@ -107,11 +107,103 @@ Vector search    → semantic relevance
 
 ---
 
-# PART 3.1 — Pre-filter vs Post-filter
+# PART 4 — Vector Index
+
+Without optimized index:
+
+```text
+Query vector
+   ↓
+compare with every stored vector
+```
+
+Index search ko accelerate karta hai.
+
+Mental model:
+
+```text
+Vectors
+  ↓
+Index Structure
+  ↓
+Fast Candidate Search
+  ↓
+Nearest Results
+```
+
+Vector DB and vector index same exact thing nahi hote. Database broader lifecycle/features provide kar sakta hai; FAISS primarily vector similarity indexing/search library hai.
+
+---
+
+# PART 5 — Exact vs Approximate Search
+
+## Exact Nearest Neighbor
+
+Every relevant vector accurately compare karne ka goal.
+
+Pros:
+- deterministic/exact for chosen metric/index
+
+Cons:
+- huge datasets par expensive ho sakta hai
+
+## Approximate Nearest Neighbor (ANN)
+
+Speed ke liye search space intelligently reduce karta hai.
+
+Tradeoff:
+
+```text
+Speed / scale ↑
+Potential perfect recall ↓
+```
+
+Production retrieval is a tradeoff, not magic.
+
+---
+
+# PART 6 — Metadata and Filtering
+
+### Metadata Definition
+
+> **Metadata is structured information associated with a stored document/chunk/vector that can be used for filtering, organization, routing or retrieval control.**
+
+Example:
+
+```json
+{
+  "source": "aks-networking.md",
+  "environment": "production",
+  "service": "payment",
+  "severity": "critical",
+  "version": "v4"
+}
+```
+
+Hinglish:
+
+```text
+Vector metadata se meaning nahi batata.
+Metadata structured facts/attributes batata hai.
+```
+
+Mental model:
+
+```text
+Metadata
+   ↓
+Exact constraint
+
+Vector similarity
+   ↓
+Semantic relevance
+```
+
+## Pre-filter vs Post-filter
 
 When a vector retrieval system supports metadata filtering, an important design question is **when the metadata constraint is applied relative to vector candidate search**.
 
-## Pre-filter
+### Pre-filter
 
 Conceptually, the metadata constraint is applied **before the vector nearest-neighbor search**:
 
@@ -147,7 +239,7 @@ vector search
 Top-K relevant documents
 ```
 
-## Post-filter
+### Post-filter
 
 Conceptually, vector candidates are selected first and the metadata constraint is applied **afterward**:
 
@@ -241,62 +333,7 @@ More controlled retrieval
 
 ---
 
-# PART 4 — Vector Index
-
-Without optimized index:
-
-```text
-Query vector
-   ↓
-compare with every stored vector
-```
-
-Index search ko accelerate karta hai.
-
-Mental model:
-
-```text
-Vectors
-  ↓
-Index Structure
-  ↓
-Fast Candidate Search
-  ↓
-Nearest Results
-```
-
-Vector DB and vector index same exact thing nahi hote. Database broader lifecycle/features provide kar sakta hai; FAISS primarily vector similarity indexing/search library hai.
-
----
-
-# PART 5 — Exact vs Approximate Search
-
-## Exact Nearest Neighbor
-
-Every relevant vector accurately compare karne ka goal.
-
-Pros:
-- deterministic/exact for chosen metric/index
-
-Cons:
-- huge datasets par expensive ho sakta hai
-
-## Approximate Nearest Neighbor (ANN)
-
-Speed ke liye search space intelligently reduce karta hai.
-
-Tradeoff:
-
-```text
-Speed / scale ↑
-Potential perfect recall ↓
-```
-
-Production retrieval is a tradeoff, not magic.
-
----
-
-# PART 6 — What Gets Stored?
+# PART 7 — What Gets Stored?
 
 Example chunk record:
 
@@ -317,7 +354,7 @@ Real vector has many more dimensions.
 
 ---
 
-# PART 7 — Ingestion vs Query Path
+# PART 8 — Ingestion vs Query Path
 
 ## Ingestion
 
@@ -347,7 +384,7 @@ Do not re-embed entire document collection on every query.
 
 ---
 
-# PART 8 — Persistence
+# PART 9 — Persistence
 
 Prototype:
 
@@ -375,7 +412,7 @@ But persistence introduces lifecycle questions:
 
 ---
 
-# PART 9 — Chroma vs FAISS Mental Model
+# PART 10 — Chroma vs FAISS Mental Model
 
 ```text
 Chroma
@@ -391,7 +428,7 @@ Neither should be treated as the universally best production option. Tool choice
 
 ---
 
-# PART 10 — DevOps Knowledge Base Example
+# PART 11 — DevOps Knowledge Base Example
 
 ```text
 AKS runbooks
@@ -410,7 +447,7 @@ Top relevant operational knowledge
 
 ---
 
-# PART 11 — Common Mistakes
+# PART 12 — Common Mistakes
 
 1. Vector DB ko LLM memory samajhna.
 2. Source text/metadata mapping lose kar dena.
@@ -422,7 +459,7 @@ Top relevant operational knowledge
 
 ---
 
-# PART 12 — Production Design Checklist
+# PART 13 — Production Design Checklist
 
 Before choosing a vector solution, ask:
 
@@ -443,7 +480,7 @@ Managed vs self-hosted?
 
 ---
 
-# PART 13 — Interview Corner
+# PART 14 — Interview Corner
 
 **Q: What is a vector database?**  
 A system designed to store/index high-dimensional vectors and retrieve nearest items efficiently, often with metadata and source content.
@@ -465,7 +502,7 @@ No. The tradeoffs depend on the database, index, filtering implementation, laten
 
 ---
 
-# PART 14 — Revision
+# PART 15 — Revision
 
 ```text
 Chunks
@@ -495,7 +532,7 @@ Pre/Post filtering = when the constraint participates in retrieval
 
 ---
 
-# PART 15 — Homework
+# PART 16 — Homework
 
 1. Normal SQL filter aur vector similarity search ka difference explain karo.
 2. Exact vs approximate nearest neighbor ka tradeoff likho.
