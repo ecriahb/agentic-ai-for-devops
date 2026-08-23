@@ -1,85 +1,42 @@
-# 🚩 Jai Bajrangbali!
+# 🚩 Lesson 06 — Embeddings & Vector Stores in LangChain
 
-# Lesson 06 — Embeddings & Vector Stores in LangChain
-
-> **Module 4 ke vector-search concepts same rahenge; framework sirf standard interfaces aur integrations provide karega.**
+> **Module 4 owns embedding/vector theory. This lesson owns the LangChain integration layer: embedding wrappers, vector-store adapters, persistence hooks and retriever hand-off.**
 
 ---
 
-# 🎯 Lesson Goal
-
-Aap samjhoge:
-- embedding abstraction kya karti hai
-- vector store abstraction kya karti hai
-- indexing vs querying flow
-- same embedding model compatibility kyu important hai
-- FAISS/Chroma integration ka mental model
-- framework abstraction ke peeche actual vector operations kya hain
-
----
-
-# PART 1 — Mental Model
+## 🎯 Where This Lesson Fits
 
 ```text
-Chunks
- ↓
-Embedding Component
- ↓
-Vectors
- ↓
-Vector Store
- ↓
-Similarity Search
+Module 4
+  → embeddings theory
+  → vector dimensions
+  → similarity metrics
+  → vector DB/index fundamentals
+
+Module 6 L06
+  → LangChain embedding interfaces
+  → vector-store integrations
+  → document/metadata association
+  → retriever hand-off
+
+Module 6 L07
+  → Retriever abstraction + RAG chain composition
 ```
 
-Framework version:
+Do not re-teach Module 4 mathematics here; use it as prerequisite knowledge.
+
+---
+
+# PART 1 — Embedding Interface in LangChain
+
+An embedding integration gives the application a standard way to encode:
 
 ```text
-Document objects
- ↓
-Embeddings wrapper
- ↓
-VectorStore integration
- ↓
-Retriever/search interface
+Document text → vector
+Query text    → vector
 ```
 
----
-
-# PART 2 — English Definitions
-
-An **embedding integration** provides a standard interface for converting text into numeric vectors.
-
-A **vector store integration** connects LangChain components to a vector index/database used for similarity-based retrieval.
-
----
-
-# PART 3 — Under the Hood
-
-Even if code becomes:
-
-```python
-vectorstore = FAISS.from_documents(chunks, embeddings)
-```
-
-underlying conceptual work remains:
-
-```text
-for each chunk:
-  text → embedding vector
-  vector → index
-  metadata → mapping/store
-```
-
-Framework does not remove vector mathematics.
-
----
-
-# PART 4 — Example with Local Embeddings
-
-One practical route is a local Hugging Face embedding wrapper.
-
-Conceptual code:
+Example local model wrapper:
 
 ```python
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -88,28 +45,76 @@ embeddings = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
 )
 
-vector = embeddings.embed_query("AKS subnet connectivity issue")
-print(len(vector))
+query_vector = embeddings.embed_query(
+    "AKS subnet connectivity issue"
+)
+
+print(len(query_vector))
 ```
 
-Expected:
-
-```text
-one numeric vector
-```
-
-Dimension depends on model.
+The vector dimension depends on the selected embedding model.
 
 ---
 
-# PART 5 — FAISS Vector Store
+# PART 2 — `embed_documents()` vs `embed_query()`
 
-Conceptual example:
+For ingestion:
+
+```python
+vectors = embeddings.embed_documents([
+    "AKS subnet NSG requirements",
+    "Terraform state locking"
+])
+```
+
+For query time:
+
+```python
+query_vector = embeddings.embed_query(
+    "Why did AKS networking fail?"
+)
+```
+
+Mental model:
+
+```text
+Index time → embed_documents()
+Query time → embed_query()
+```
+
+The document and query representations must remain compatible under the selected embedding model/configuration.
+
+---
+
+# PART 3 — Vector Store Integration
+
+A vector-store integration connects LangChain `Document` objects and embeddings to a searchable vector backend.
+
+Conceptually:
+
+```text
+Document objects
+      ↓
+Embedding wrapper
+      ↓
+Vector store
+      ↓
+Similarity search
+```
+
+The framework adapter is not the vector mathematics itself.
+
+---
+
+# PART 4 — FAISS Integration
 
 ```python
 from langchain_community.vectorstores import FAISS
 
-vectorstore = FAISS.from_documents(chunks, embeddings)
+vectorstore = FAISS.from_documents(
+    chunks,
+    embeddings,
+)
 
 results = vectorstore.similarity_search(
     "AKS deployment failed after NSG change",
@@ -117,53 +122,80 @@ results = vectorstore.similarity_search(
 )
 ```
 
-Returned values are typically documents/chunks, not just raw vector indices.
+The useful abstraction is that returned items remain application-level documents rather than bare integer vector positions.
 
-Benefit:
+Inspect:
 
-```text
-text + metadata stay associated with vector search result
+```python
+for doc in results:
+    print(doc.page_content)
+    print(doc.metadata)
 ```
 
 ---
 
-# PART 6 — Chroma Concept
+# PART 5 — Chroma Integration Mental Model
 
-Alternative integration:
+A higher-level store can manage:
 
 ```text
+IDs
 Documents
- ↓
-Embedding function
- ↓
-Chroma collection
- ↓
-search/query
+Metadata
+Embeddings
+Query
+Persistence/configuration
 ```
 
-Different stores have different persistence, filtering and scaling characteristics.
+Example conceptual flow:
 
-Framework common interface does not make them architecturally identical.
+```text
+Document chunks
+      ↓
+Chroma integration
+      ↓
+Collection
+      ↓
+Search
+      ↓
+Document results
+```
+
+Store-specific behavior—especially filtering, persistence and deployment—is still implementation-specific.
 
 ---
 
-# PART 7 — Same Embedding Space Rule
+# PART 6 — Store Abstraction vs Backend Behavior
 
-Indexing:
+LangChain can provide a common interface, but this does not mean every vector store behaves identically.
 
-```text
-all-MiniLM-L6-v2 → document vectors
-```
-
-Querying should use compatible same space:
+Verify backend-specific semantics for:
 
 ```text
-all-MiniLM-L6-v2 → query vector
+filter syntax
+score semantics
+persistence
+updates/deletes
+index type
+scaling
+consistency
 ```
 
-Changing embedding model without rebuilding index can invalidate retrieval assumptions.
+Abstraction reduces integration friction; it does not erase backend differences.
 
-Production metadata should record:
+---
+
+# PART 7 — Same Embedding Contract
+
+If documents were indexed with:
+
+```text
+sentence-transformers/all-MiniLM-L6-v2
+```
+
+then query embedding must use a compatible representation strategy.
+
+Store operational metadata such as:
 
 ```text
 embedding_model
@@ -172,29 +204,81 @@ dimension
 index_version
 ```
 
+When the embedding strategy changes, treat the existing index as a lifecycle decision rather than blindly mixing vectors from incompatible representations.
+
+Detailed embedding theory remains in Module 4 Lesson 02/03.
+
 ---
 
-# PART 8 — Similarity Search vs Retriever
+# PART 8 — Metadata Association
 
-Vector store can expose direct search:
+A vector result is useful only when application context survives:
 
 ```text
-vectorstore.similarity_search(...)
+vector
+ ↕
+Document
+ ↕
+metadata
 ```
 
-Retriever abstraction turns search into a standardized retrieval component:
+Example:
 
 ```python
-retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+for doc in results:
+    print(doc.metadata.get("source"))
 ```
 
-Next lesson me retriever deeply use hoga.
+Metadata design/filtering theory remains in Module 4 Lesson 09. Here the goal is verifying that the integration preserves it.
 
 ---
 
-# PART 9 — DevOps Example
+# PART 9 — Persistence and Lifecycle
 
-Knowledge base:
+A learning demo may rebuild an index every run.
+
+Production asks:
+
+```text
+Where is it persisted?
+How are updates applied?
+How are deletions handled?
+How is index version tracked?
+How is rollback performed?
+```
+
+LangChain does not automatically answer those architecture questions; the backend/deployment design does.
+
+---
+
+# PART 10 — Direct Search vs Retriever
+
+Direct backend call:
+
+```python
+results = vectorstore.similarity_search(
+    "AKS connectivity issue",
+    k=3,
+)
+```
+
+Retriever hand-off:
+
+```python
+retriever = vectorstore.as_retriever(
+    search_kwargs={"k": 3}
+)
+```
+
+The first is backend-facing search. The second exposes a reusable application retrieval interface.
+
+**Lesson 07 owns the retriever abstraction.**
+
+---
+
+# PART 11 — DevOps Example
+
+Knowledge chunks:
 
 ```text
 aks-networking.md
@@ -203,120 +287,105 @@ pipeline-failure.md
 rollback.md
 ```
 
-Question:
+Query:
 
 ```text
-Pods cannot reach internal service after Terraform networking change
+Pods cannot reach an internal service after Terraform networking change.
 ```
 
-Expected:
+At this lesson level we verify:
 
 ```text
-AKS networking + Terraform networking chunks rank high
-Docker build doc rank low
+chunks → embeddings → vectorstore → Document results
 ```
 
-If not, investigate:
-
-```text
-chunking
-embedding model
-query wording
-metadata filters
-index freshness
-```
+We do not redesign the retrieval strategy here; Module 5 owns advanced RAG retrieval behavior.
 
 ---
 
-# PART 10 — Persistence
+# PART 12 — Common Integration Mistakes
 
-Learning demo may rebuild index every run.
+### Wrong model contract
 
-Production questions:
+Query and indexed vectors are incompatible.
 
-```text
-Where is index persisted?
-How is it refreshed?
-How are deletions handled?
-How are versions rolled back?
-How do replicas stay consistent?
-```
+### Metadata lost
 
-Framework does not answer all of these automatically.
+Source traceability disappears.
 
----
+### Store backend assumed identical
 
-# PART 11 — Filtering
+Filter/persistence behavior may differ.
 
-Metadata filters can narrow retrieval:
+### Re-indexing ignored
 
-```text
-environment=production
-team=platform
-status=approved
-```
+Model or source changes leave stale data.
 
-But repeat critical principle:
+### Secrets stored casually
 
-```text
-metadata filtering != authorization
-```
+Vectorization does not make sensitive data safe.
 
-Unauthorized documents should be excluded by access-control policy before/within retrieval.
+### `k` treated as truth
 
----
-
-# PART 12 — Common Mistakes
-
-- vector store abstraction ko database architecture samajh lena
-- embedding model change and no re-index
-- `k=3` blindly production constant bana dena
-- similarity score meaning universal assume karna
-- source metadata discard karna
-- vector DB me secrets store karna
+`k=3` is a retrieval request, not a quality guarantee.
 
 ---
 
 # PART 13 — Interview Q&A
 
 ### Q1. What does LangChain add over raw FAISS?
-A document-centric integration and standardized interfaces that connect embeddings, vector stores and retrievers with other application components.
 
-### Q2. Does switching vector stores require no code/architecture changes?
-Not necessarily. Common interfaces reduce integration changes, but filtering, persistence, scaling and scoring behavior remain store-specific.
+A document-oriented integration and standard interfaces that connect embeddings, vector stores and retrievers to the rest of the workflow.
 
-### Q3. Why record embedding model version?
-Because indexed and query vectors must share a compatible semantic space, and model changes often require re-indexing.
+### Q2. Does a vector-store abstraction erase backend differences?
 
----
+No. Filtering, persistence, score semantics and operational behavior remain backend-specific.
 
-# PART 14 — Revision
+### Q3. Why track embedding model/version?
 
-```text
-Embedding wrapper = text → vector interface
-Vector store = vectors + document association + search
-Retriever = query → documents interface
-```
+Because indexed and query vectors must be compatible and model changes may require controlled re-indexing.
+
+### Q4. What is the next abstraction after a vector store?
+
+The retriever: a reusable application-facing `query → documents` interface.
 
 ---
 
-# PART 15 — Homework
+# PART 14 — Practical Exercise
 
-Design index metadata for a production DevOps KB:
+Take the chunks produced in Lesson 05 and:
+
+1. instantiate a LangChain embedding wrapper,
+2. build a local FAISS vector store,
+3. query it with one DevOps question,
+4. print returned `page_content` and metadata,
+5. convert the store into a retriever.
+
+Verify:
 
 ```text
-index_version
-embedding_model
-source_version
-created_at
-owner
-classification
+chunk count
+embedding dimension
+returned sources
+metadata preservation
 ```
-
-Explain which fields are operational, retrieval-related, and security-related.
 
 ---
 
 # 🔁 Next Lesson Kyu?
 
-Ab searchable vector store ready hai. Next direct search ko **Retriever** abstraction me convert karke complete **RAG chain** banayenge.
+Ab framework ke through vectors searchable hain.
+
+Next:
+
+```text
+VectorStore
+    ↓
+Retriever
+    ↓
+Context formatter
+    ↓
+Prompt | Model | Parser
+```
+
+# 👉 Lesson 07 — Retrievers & RAG Chains
