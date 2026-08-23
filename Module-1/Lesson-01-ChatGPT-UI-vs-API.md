@@ -24,6 +24,28 @@ Is lesson ke end tak aap clearly samjhoge:
 
 ---
 
+# 🧭 Where This Lesson Fits
+
+```text
+Module 0
+LLM fundamentals
+      ↓
+Lesson 01
+UI vs API
+      ↓
+Lesson 02
+Development environment + secrets
+      ↓
+Lesson 03–05
+Provider setup + request/response practice
+```
+
+**This lesson owns the conceptual distinction between a human-facing AI product and programmatic model access. It does not teach REST/HTTP deeply; that canonical API protocol treatment belongs to Module 3.**
+
+Module 1 also does not re-teach the detailed Prompt Engineering curriculum; that belongs to Module 2.
+
+---
+
 # 🧠 Why This Topic Now?
 
 Module 0 me humne samjha:
@@ -108,45 +130,6 @@ Input dene wala = Human
 Output read karne wala = Human
 Next action decide karne wala = Human
 ```
-
----
-
-## 2. Manual DevOps Flow
-
-Suppose production pipeline fail hui.
-
-Manual process:
-
-```text
-Open Azure DevOps / GitHub Actions
-       ↓
-Find failed stage
-       ↓
-Copy logs
-       ↓
-Open ChatGPT
-       ↓
-Paste logs
-       ↓
-Write prompt
-       ↓
-Read RCA
-       ↓
-Manually take action
-```
-
-Ek incident ke liye ye useful hai.
-
-But problem:
-
-```text
-10 incidents
-50 pipelines
-100 PR checks
-24x7 monitoring
-```
-
-Human manually har baar same steps karega to process slow aur repetitive ho jayega.
 
 ---
 
@@ -258,7 +241,7 @@ API = Software ↔ AI
 ### UI Flow
 
 ```text
-Brijesh
+Human
   ↓
 "Explain why AKS deployment failed"
   ↓
@@ -539,6 +522,8 @@ Tool Calling
 Agent Loop
 ```
 
+The detailed tool-calling contract belongs to **Lesson 08**, and the bounded agent loop belongs to **Lesson 09**. This lesson only establishes the distinction.
+
 ---
 
 # PART 8 — Benefits and Limitations
@@ -574,7 +559,7 @@ Validation
 Observability
 ```
 
-Lesson 5 me real tool integrations ke saath ye aur important ho jayega.
+Deep HTTP/REST semantics, retries and provider-agnostic API design are covered later in **Module 3**.
 
 ---
 
