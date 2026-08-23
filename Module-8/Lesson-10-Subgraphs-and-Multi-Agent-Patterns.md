@@ -8,15 +8,16 @@
 
 # 🎯 Lesson Goal
 
+Is lesson ka purpose **Module 8 ke stateful graph ko decompose karna** hai. Deep multi-agent coordination patterns Module 9 me canonical honge.
+
 Aap samjhoge:
 
 - subgraph kya hota hai
 - specialist workflow kya hota hai
 - supervisor pattern ka mental model
-- handoff kaise controlled hota hai
-- multi-agent architecture kab useful hai
-- multi-agent chaos ke common risks
-- Module 9 ke liye foundation
+- handoff contract kaise define hota hai
+- multi-agent architecture kab justified ho sakta hai
+- Module 9 ka scope yahan exactly kahan se start hoga
 
 ---
 
@@ -24,7 +25,7 @@ Aap samjhoge:
 
 A **subgraph** is a graph or workflow component embedded inside a larger graph to encapsulate a bounded responsibility.
 
-A **multi-agent system** coordinates multiple specialized agent/workflow components that may have different goals, tools, prompts or state scopes.
+A **multi-agent system** coordinates multiple specialized decision-making components. In this course, the detailed coordination patterns are deferred to **Module 9**.
 
 ---
 
@@ -55,7 +56,17 @@ isolated tests
 bounded tools
 separate retry policy
 reusable workflow
-less agent-to-agent ambiguity
+less coordination ambiguity
+```
+
+The first design preference is:
+
+```text
+Function/Node
+   ↓ if complexity grows
+Subgraph
+   ↓ if independent decision-making is truly justified
+Multi-Agent
 ```
 
 ---
@@ -75,7 +86,7 @@ Normalized Evidence Results
       Main Graph
 ```
 
-Each subgraph returns evidence, not free-form authority.
+Each subgraph returns a contract, not free-form authority.
 
 ---
 
@@ -96,17 +107,19 @@ Output:
 ```python
 {
   "status": "SUCCESS",
-  "evidence": [E2, E3],
+  "evidence_ids": ["E2", "E3"],
   "gaps": [],
-  "summary": "..."
+  "hypotheses": ["network change may be relevant"]
 }
 ```
 
-Main graph should not depend on opaque internal conversation history.
+Main graph should consume structured fields, not trust an internal specialist chat transcript as evidence.
 
 ---
 
-# PART 5 — Supervisor Pattern
+# PART 5 — Supervisor Pattern: Introduction Only
+
+At this stage, think of a supervisor simply as a coordinator:
 
 ```text
 Supervisor
@@ -120,10 +133,12 @@ Choose Specialist
   ↓
 Collect Specialist Result
   ↓
-Decide Next Specialist or Finish
+Continue or Finish
 ```
 
-Supervisor can be deterministic, model-assisted or hybrid.
+The supervisor can be deterministic, model-assisted or hybrid.
+
+**Do not go deep into delegation strategies, debate, handoff protocols, shared-memory designs or agent communication policies here. Those belong to Module 9.**
 
 ---
 
@@ -175,7 +190,7 @@ specialist proposal != execution authority
 
 ---
 
-# PART 8 — Handoff Risks
+# PART 8 — Handoff Contract
 
 Bad handoff:
 
@@ -184,10 +199,10 @@ Agent A: "Network is definitely root cause"
 Agent B accepts as fact
 ```
 
-Better handoff:
+Better:
 
 ```text
-Agent/Subgraph A returns evidence IDs + status + hypothesis separately
+Subgraph returns evidence IDs + status + hypothesis separately
 ```
 
 Example:
@@ -195,18 +210,20 @@ Example:
 ```python
 {
   "evidence_ids": ["E2", "E3"],
-  "hypothesis": "network change may be causal",
+  "hypotheses": ["network change may be causal"],
   "confidence": "medium"
 }
 ```
 
 Downstream validates evidence itself.
 
+The detailed **agent-to-agent communication patterns** will be taught in Module 9.
+
 ---
 
 # PART 9 — Shared State vs Private State
 
-Some state should be shared:
+Some state may be shared:
 
 ```text
 incident_id
@@ -223,51 +240,31 @@ local intermediate plan
 specialist-specific messages
 ```
 
-Avoid giant global state where every agent can overwrite everything.
+Avoid giant global state where every component can overwrite everything.
 
 ---
 
-# PART 10 — Multi-Agent Failure Modes
+# PART 10 — When Multi-Agent Is Actually Justified
+
+Use multi-agent architecture only when responsibilities differ materially, for example:
 
 ```text
-agents call each other forever
-same evidence collected repeatedly
-contradictory summaries
-context explosion
-permissions broadened unnecessarily
-cost/latency multiplication
-unclear final authority
-```
-
-Therefore:
-
-```text
-bounded specialists
-explicit supervisor
-shared termination policy
-normalized outputs
-source-backed evidence
-```
-
----
-
-# PART 11 — When Multi-Agent Is Justified
-
-Useful when responsibilities differ materially:
-
-```text
-different tool domains
 different security boundaries
+different tool domains
 different long-running workflows
-different specialist prompts/evaluation datasets
 parallel independent investigations
+independent evaluation requirements
 ```
 
-Not useful just because architecture diagram looks advanced.
+Not useful merely because an architecture diagram looks advanced.
+
+The decision framework and patterns for **supervisor, router, parallel agents, handoffs, shared state and conflict resolution** are intentionally deferred to **Module 9**.
 
 ---
 
-# PART 12 — Parallel Specialist Pattern
+# PART 11 — Parallel Specialist Pattern
+
+A bounded graph may fan out without requiring autonomous agents:
 
 ```text
                   ┌→ Pipeline Investigation ─┐
@@ -284,9 +281,11 @@ evidence deduplication
 consistent source IDs
 ```
 
+Parallel workflows are not automatically multi-agent systems.
+
 ---
 
-# PART 13 — Final Decision Authority
+# PART 12 — Final Decision Authority
 
 Never let each specialist independently execute remediation.
 
@@ -306,15 +305,37 @@ central controlled executor
 
 ---
 
+# PART 13 — Module Boundary
+
+```text
+Module 8
+= stateful single-graph orchestration
++ bounded subgraphs
++ introductory supervisor concept
+
+Module 9
+= deep multi-agent coordination
++ architecture patterns
++ specialization boundaries
++ handoffs
++ shared state/communication
++ conflict resolution
+```
+
+This prevents the same multi-agent theory from being taught twice.
+
+---
+
 # PART 14 — Common Mistakes
 
 - one agent per tool
-- free-form agent-to-agent messages as truth
-- no supervisor loop limit
+- free-form handoffs treated as evidence
+- no supervisor/graph termination rule
 - broad tool permissions to every specialist
 - no normalized handoff schema
 - duplicated evidence
 - no final owner for decision
+- teaching Module 9 patterns inside the Module 8 graph lesson
 
 ---
 
@@ -326,11 +347,14 @@ A subgraph is a compositional workflow boundary; multi-agent architecture adds m
 ### Q2. Why use bounded specialist toolsets?
 They reduce security exposure and improve decision relevance.
 
-### Q3. How should agents hand off information?
-Prefer structured state/evidence contracts with source IDs, not unverified prose treated as truth.
+### Q3. How should a specialist hand off information?
+Prefer structured state/evidence contracts with source IDs rather than unverified prose treated as truth.
 
-### Q4. What is supervisor pattern?
-A coordinator decides which specialist runs next and when the overall task is complete.
+### Q4. Is parallel fan-out automatically multi-agent?
+No. Parallel deterministic subgraphs can execute concurrently without introducing multiple autonomous decision-makers.
+
+### Q5. Where are advanced multi-agent patterns taught?
+Module 9 is the canonical deep-dive module for multi-agent coordination.
 
 ---
 
@@ -339,16 +363,18 @@ A coordinator decides which specialist runs next and when the overall task is co
 ```text
 Subgraph = bounded reusable workflow
 Specialist = domain-limited component
-Supervisor = coordinator
+Supervisor = introductory coordinator concept
 Handoff = validated structured contract
 Shared evidence = source-backed truth layer
+
+Deep multi-agent coordination → Module 9
 ```
 
 ---
 
 # PART 17 — Homework
 
-Design three specialists for:
+Design three bounded specialists for:
 
 ```text
 CI/CD
@@ -365,6 +391,8 @@ shared state
 output contract
 termination condition
 ```
+
+Then decide whether each specialist really needs an autonomous agent or can remain a deterministic subgraph.
 
 ---
 
