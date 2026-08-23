@@ -4,6 +4,29 @@
 
 ---
 
+## Where This Lesson Fits
+
+```text
+Lesson 03
+Hosted provider setup
+      ↓
+Lesson 04
+Local provider setup
+      ↓
+Lesson 05
+First request + response mechanics
+      ↓
+Lesson 06
+Tokens + context capacity
+      ↓
+Lesson 07
+Structured output + validation
+```
+
+**Canonical ownership:** this lesson owns the first end-to-end API request/response mechanics and response-object inspection. It does not own deep HTTP/REST semantics (Module 3), prompt/context methodology (Module 2), or tool-calling mechanics (Lesson 08).
+
+---
+
 # 1. English Definition
 
 **An API call is a programmatic request sent by a client application to a service, followed by a structured response returned by that service.**
@@ -199,6 +222,8 @@ Why full object matters:
 - structured items
 - tool calls
 - status/error workflows
+
+Later tool calling will require inspecting more than text.
 
 ---
 
@@ -448,7 +473,7 @@ Context
 = information supplied to help model answer
 ```
 
-Later Module 2 deepens prompt/context engineering.
+Later Module 2 deepens prompt/context engineering. This lesson only needs the distinction.
 
 ---
 
@@ -653,4 +678,4 @@ Kitna context bhejna chahiye?
 Hosted usage/cost aur long logs par kya effect hota hai?
 ```
 
-➡️ **Lesson 6 — Tokens, Cost & Context Engineering**
+➡️ **Lesson 6 — Tokens, Cost & Context Budgets**
