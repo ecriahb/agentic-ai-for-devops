@@ -4,6 +4,8 @@
 
 > **API reachable hona aur API authorized hona do alag problems hain.**
 
+> **Canonical boundary:** Module 1 introduced safe local secret handling. This lesson owns the **API authentication/authorization model**: credentials, bearer tokens, 401/403, least privilege, rotation and workload identity. Lesson 06 then focuses on how applications receive configuration/secrets safely at runtime.
+
 ---
 
 ## 🎯 Lesson Goal
@@ -17,7 +19,7 @@ Aap samjhoge:
 - 401 vs 403
 - key rotation and least privilege
 - managed identity / workload identity ka higher-level idea
-- AI APIs ke secrets safely handle karna
+- AI APIs ke authentication patterns
 
 ---
 
@@ -54,13 +56,13 @@ Authorization fails
 ## 2. API Key Kya Hai?
 
 **English Definition:**
-> An API key is a secret credential used by an application to authenticate or identify itself to an API service.
+> An API key is a credential value used by an API service to authenticate, identify or authorize an application according to that service's design.
 
 Conceptual flow:
 
 ```text
 Python App
-   ↓ API key
+   ↓ credential
 Provider API
    ↓ verify
 Request accepted/rejected
@@ -68,7 +70,9 @@ Request accepted/rejected
 
 Important:
 
-> API key password jaisa secret hai. GitHub repo me hard-code nahi karna.
+> API-key security is provider-specific; never assume one header/name works for every API.
+
+Credential **storage** is covered in Lesson 06. Here we focus on what the credential means to the API.
 
 ---
 
@@ -80,7 +84,7 @@ Many APIs use an HTTP header like:
 Authorization: Bearer <secret-token>
 ```
 
-The word `Bearer` indicates that possession of the token is sufficient to present it for access according to server policy.
+The server validates the presented credential according to its authentication and authorization rules.
 
 Do not log the full token.
 
@@ -88,7 +92,7 @@ Do not log the full token.
 
 ## 4. API Key in Header
 
-Provider-specific authentication shapes differ. A common pattern is:
+A common pattern is:
 
 ```python
 headers = {
@@ -97,13 +101,13 @@ headers = {
 }
 ```
 
-But never assume every provider uses the same header. Always follow that provider's official documentation.
+But never assume every provider uses the same header. Follow the provider's official documentation.
 
-OpenAI's official API documentation uses API keys with Bearer authentication and explicitly recommends loading keys securely from environment variables or a key management service rather than exposing them in client-side code.
+For OpenAI API usage, the current API pattern uses API keys with Bearer authentication; production code should obtain the credential through a secure application configuration/identity mechanism rather than embedding it in client-side code.
 
 ---
 
-## 5. 401 vs 403 Again
+## 5. 401 vs 403
 
 ```text
 401 Unauthorized
@@ -118,8 +122,8 @@ Debugging:
 ```text
 401
  ↓
-Key/token loaded?
-Correct header?
+Credential present?
+Correct auth scheme?
 Expired/revoked?
 Correct endpoint/provider?
 
@@ -127,7 +131,7 @@ Correct endpoint/provider?
  ↓
 Role/RBAC correct?
 Resource scope correct?
-Policy/network restrictions?
+Policy restrictions?
 ```
 
 ---
@@ -153,9 +157,11 @@ Human approval before remediation
 Narrow write permissions only where required
 ```
 
+The exact secret-storage mechanism does not change the authorization principle.
+
 ---
 
-## 7. Rotation
+## 7. Credential Rotation
 
 Secrets permanent nahi samajhne chahiye.
 
@@ -175,11 +181,11 @@ Rotate
 Revoke when unused/compromised
 ```
 
-If key accidentally GitHub me commit ho gayi:
+If a credential is committed publicly:
 
-1. Key immediately revoke/rotate karo.
-2. New key create karo.
-3. Git history cleanup only secondary action hai — leaked credential ko still compromised treat karo.
+1. Treat it as compromised.
+2. Revoke/rotate it immediately.
+3. Then clean up repository/history as required.
 
 ---
 
@@ -190,7 +196,7 @@ Cloud production scenarios me possible ho to identity-based authentication prefe
 ```text
 Managed Identity
 Workload Identity
-Service Principal with controlled secret/certificate
+Service Principal with controlled credentials
 OIDC federation
 ```
 
@@ -220,19 +226,35 @@ Log Analytics / Azure resource
 Evidence
 ```
 
-Production architecture me ye hard-coded admin API key se safer hai.
+The identity establishes who the application is; RBAC determines what it may read.
+
+---
+
+## 🔗 Boundary With Lesson 06
+
+```text
+Lesson 05
+→ What authentication/authorization means
+→ What API credentials do
+
+Lesson 06
+→ Where runtime configuration comes from
+→ .env / environment variables / secret stores
+```
+
+Do not turn Lesson 05 into a `.env` tutorial; that belongs to Lesson 06.
 
 ---
 
 # ❌ Common Mistakes
 
 - key source code me hard-code karna
-- `.env` GitHub par commit karna
-- secrets console logs me print karna
-- one admin credential sab apps me reuse karna
+- API key ko authorization ke equivalent samajhna
 - 401 aur 403 confuse karna
+- one admin credential sab apps me reuse karna
 - old keys rotate na karna
 - client-side browser code me server secret expose karna
+- authentication successful hone ko authorization successful samajhna
 
 ---
 
@@ -244,12 +266,35 @@ Authentication verifies identity; authorization determines what that identity is
 
 **Q: How would you secure AI API credentials in production?**
 
-Prefer managed/short-lived identity where supported; otherwise use a centralized secret store, least privilege, rotation, restricted access, and never hard-code or log secrets.
+Prefer managed/short-lived identity where supported; otherwise use centralized secret management, least privilege, rotation, restricted access and safe logging.
+
+---
+
+# 🧠 Revision
+
+```text
+Credential
+   ↓
+Authentication
+   ↓
+Who are you?
+
+Identity + Permissions
+   ↓
+Authorization
+   ↓
+What may you do?
+```
 
 ---
 
 # 🔁 Why Next Lesson?
 
-Ab question hai: Python program ko key milegi kaise without code me likhe?
+Ab authentication ka meaning clear hai. Next question:
+
+```text
+Application ko credential/configuration milegi kahan se?
+Code me hard-code kiye bina runtime par kaise load hogi?
+```
 
 > **Lesson 06 — Environment Variables & Secret Management**
