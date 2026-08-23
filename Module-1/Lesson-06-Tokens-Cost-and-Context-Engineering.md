@@ -1,31 +1,46 @@
-# Module 1 — Lesson 6: Tokens, Cost & Context Engineering
+# Module 1 — Lesson 6: Tokens, Cost & Context Budgets
 
-> **Goal:** Beginner ko samjhana ki LLM text ko tokens me process karta hai, context finite hota hai, hosted usage/cost input-output volume se related hota hai, aur DevOps logs ko blindly dump karne ke bajay relevant evidence select karna chahiye.
+> **Goal:** Understand the mechanics needed for a reliable first API application: tokens, finite context capacity, hosted usage/cost signals, and why oversized DevOps inputs should not be sent blindly.
 
 ---
 
-> **Course boundary:** This lesson introduces context budgeting because it is required to make a first API application reliable. **Module 2** is the canonical deep-dive for prompt/context engineering patterns; **Module 4–5** later apply context selection to embeddings and RAG. Do not treat this lesson as a second Prompt Engineering course.
+> **Course boundary:** This lesson is a **foundation and operational primer**, not the course's context-engineering curriculum. **Module 2 Lesson 7 — Context Engineering for Logs, Terraform & AKS** is the canonical deep-dive for context selection, normalization, source labeling, trust classes, deduplication, prioritization, redaction and budgeting. Module 4–5 later apply these principles to embeddings and RAG retrieval.
+
+## Where This Lesson Fits
+
+```text
+Lesson 05
+Request + response mechanics
+        ↓
+Lesson 06
+Tokens + context capacity + usage awareness
+        ↓
+Lesson 07
+Structured output + validation
+```
+
+The detailed context-engineering methodology lives in **Module 2 Lesson 7**. Later modules reuse that foundation rather than re-teaching it.
 
 ---
 
 # 1. English Definitions
 
-**Token:** A token is a unit of text that a language model processes internally.
+**Token:** A unit of text representation that a language model processes internally.
 
-**Context Window:** The context window is the maximum amount of tokenized information a model can consider during a request/conversation state, subject to model/API behavior.
+**Context Window:** The finite amount of tokenized input/state a model can consider for a request, subject to the specific model and API behavior.
 
-**Context Engineering:** Context engineering is the deliberate selection, preparation, labeling and budgeting of information supplied to a model for a task.
+**Context Budget:** The practical allocation of available context capacity among instructions, user input, evidence, history, tool results and output requirements.
 
 Simple Hinglish:
 
 ```text
-Prompt + Evidence + History
-        ↓ tokenization
-Input Tokens
-        ↓
+Text
+  ↓ tokenization
+Tokens
+  ↓
 Model Context
-        ↓
-Generated Output Tokens
+  ↓
+Generated Output
 ```
 
 ---
@@ -34,16 +49,15 @@ Generated Output Tokens
 
 Lesson 5 me request/response samjha.
 
-Ab question:
+Ab next engineering questions:
 
 ```text
-Request ke andar kitna text bhej sakte hain?
-Kitna useful hai?
-Kitna waste/noise hai?
-Hosted API usage par kya impact hai?
+Request kitna bada ho sakta hai?
+Input aur output usage ko kaise observe karein?
+Bahut bada DevOps log blindly bhejna kyu risky hai?
 ```
 
-DevOps me ye especially important hai because logs and plans can be huge.
+Ye concepts aage ke context-engineering work ke liye prerequisite hain.
 
 ---
 
@@ -51,21 +65,20 @@ DevOps me ye especially important hai because logs and plans can be huge.
 
 One English word may map to one or multiple tokens. Code, punctuation, JSON, paths and identifiers also consume tokens.
 
-So avoid simplistic rule:
+Avoid this simplification:
 
 ```text
 1 word = 1 token
 ```
 
-Exact tokenization model-specific ho sakti hai.
+Exact tokenization depends on the model/tokenizer.
 
-What matters operationally:
+Operationally:
 
 ```text
-More text
+More input text
 → usually more input tokens
-→ more processing
-→ more latency/cost/noise potential
+→ potentially more processing/latency/cost
 ```
 
 ---
@@ -76,44 +89,41 @@ Conceptually:
 
 ```text
 INPUT TOKENS
-= prompt + context + evidence + relevant history
+= instructions + question + supplied context/evidence + relevant history
 
 OUTPUT TOKENS
-= model-generated response
+= model-generated content
 ```
 
-Total request footprint may involve both.
-
-Hosted provider usage often reports token counts/usage metadata. Do not hard-code old price numbers in course logic because pricing changes.
+Hosted APIs commonly expose usage metadata. Treat those values as runtime observations rather than hard-coded course constants.
 
 ---
 
-# 5. Context Window Mental Model
+# 5. Context Capacity
+
+A useful mental model is:
 
 ```text
 ┌──────────────────────────────┐
-│ Model Context Capacity       │
+│ Available Context Capacity   │
 │                              │
 │ Instructions                 │
 │ Current question             │
-│ Evidence                     │
-│ Conversation/history         │
-│ Tool results                 │
-│ Output budget                │
+│ Evidence / tool results      │
+│ Relevant history             │
+│ Output requirements          │
 └──────────────────────────────┘
 ```
 
-If too much information is sent, APIs/models may reject, truncate or handle it according to their current behavior/configuration.
+If the supplied request exceeds current model/API limits, behavior can include rejection, truncation or other provider/model-specific handling.
 
-Core lesson:
-
-> **Finite context should be treated as an engineering budget.**
+> **Treat context as an engineering budget, not an unlimited memory store.**
 
 ---
 
 # 6. Why DevOps Engineers Must Care
 
-Bad idea:
+A bad first approach is:
 
 ```text
 100 MB pipeline log
@@ -123,220 +133,114 @@ Bad idea:
 → send everything to LLM
 ```
 
-Problems:
+Potential problems:
 
-- context overflow
-- high latency
-- hosted usage/cost
-- irrelevant noise
-- secret leakage risk
-- important evidence buried
-- poorer reasoning
+- unnecessary input volume
+- latency and hosted usage/cost
+- relevant evidence buried in noise
+- secret/sensitive-data exposure
+- larger prompt-injection surface
 
-Better:
+The **full method for solving these problems belongs to Module 2 Lesson 7**. Here, remember only the principle:
 
 ```text
-Collect
-→ Filter
-→ Normalize
-→ Redact
-→ Source-label
-→ Prioritize
-→ Send relevant context
+Do not maximize context.
+Maximize relevant, usable context.
 ```
 
 ---
 
-# 7. Context Quality > Context Quantity
+# 7. Prompt Engineering vs Context Engineering
 
-More context is not automatically better.
-
-Good context properties:
+This lesson only establishes the distinction:
 
 ```text
-Relevant
-Current/fresh
-Source-labeled
-Minimal but sufficient
-Redacted
-Structured
-Non-duplicative
-```
+Prompt Engineering
+→ What should the model do?
 
-Target:
-
-```text
-Evidence density ↑
-Noise ↓
-```
-
----
-
-# 8. Prompt Engineering vs Context Engineering
-
-Prompt engineering:
-
-```text
-Model ko kya karna hai?
-```
-
-Context engineering:
-
-```text
-Model ko kaunsi information dekar karwana hai?
+Context Engineering
+→ What information should the model receive to do it?
 ```
 
 Example:
 
 ```text
 Prompt:
-Identify the most evidence-supported root cause.
+Identify the strongest evidence-supported root-cause hypothesis.
 
 Context:
-[E1] Deployment failed during Terraform Apply
-[E2] NSG rule removed
-[E3] AKS connectivity validation failed
+[E1] Deployment failed during Terraform Apply.
+[E2] NSG rule was removed.
+[E3] AKS connectivity validation failed.
 ```
 
-Both matter.
+For the full methodology, see:
 
-For the complete prompt-engineering methodology, continue to **Module 2** rather than expanding this lesson into another prompting curriculum.
+> **Module 2 → Lesson 7: Context Engineering for Logs, Terraform & AKS**
+
+That lesson owns normalization, source IDs, trust classes, deduplication, prioritization, redaction, context ordering and context testing.
 
 ---
 
-# 9. Raw Log vs Evidence Context
+# 8. Context != Memory
 
-## Raw
-
-```text
-10,000 lines of build output
-provider downloads
-warnings
-success messages
-timestamps
-stack traces
-secret-like values
-```
-
-## Better normalized evidence
-
-```text
-[E1] Pipeline failed during Terraform Apply.
-[E2] Terraform removed aks-subnet-allow.
-[E3] AKS subnet connectivity validation failed after change.
-```
-
-This is easier to reason over and validate.
-
----
-
-# 10. Source Labels
-
-Instead of:
-
-```text
-NSG rule removed.
-```
-
-Use:
-
-```text
-[E2][terraform_plan] NSG rule aks-subnet-allow removed.
-```
-
-Benefits:
-
-- citations
-- traceability
-- claim validation
-- conflict handling
-
-Later RAG modules use the same principle at larger scale.
-
----
-
-# 11. Freshness Matters
-
-Current incident evidence and old runbooks are different.
-
-```text
-Current evidence:
-What is happening now?
-
-Reference knowledge:
-What usually should happen?
-```
-
-Do not merge blindly.
-
-Example:
-
-```text
-[E1] Current AKS status = degraded
-[R1] Runbook says verify NSG/UDR/DNS
-```
-
-R1 can guide investigation but does not prove current cause.
-
----
-
-# 12. Context != Memory
-
-Important distinction:
+Keep these concepts separate:
 
 ```text
 Context
-= information actually supplied to model now
+= information supplied to the model for the current request
 
 Application State
-= data preserved by host across workflow steps
+= data preserved by the host across workflow steps
 
 Conversation History
 = prior messages
 
 Evidence
-= validated observations supporting facts
+= observations that support or contradict a claim
 ```
 
-They can overlap, but are not identical.
+They can overlap, but they are not interchangeable.
 
 ---
 
-# 13. Hosted Cost Thinking
+# 9. Hosted Cost Thinking
 
-Do not memorize a static price table in the lesson.
+Do not memorize static provider pricing in this lesson.
 
-Instead understand drivers:
+Understand the drivers:
 
 ```text
 more input
 + more output
 + more calls
-+ more expensive model tier
-= potentially higher hosted cost
++ more expensive model
+= potentially higher hosted usage/cost
 ```
 
-Operational strategy:
+Useful operational observations include:
 
-- log usage metadata
-- set request budgets
-- reduce duplicate calls
-- compress context carefully
-- choose model according to task
+```text
+usage metadata
+request count
+latency
+model selection
+context size
+```
 
 ---
 
-# 14. Local Ollama Cost Thinking
+# 10. Local Ollama Cost Thinking
 
-No hosted per-call bill for local inference does not mean resource-free.
+Local inference may avoid a hosted per-call charge, but it is not resource-free.
 
-You still spend:
+You still consume:
 
 ```text
-CPU/GPU
-RAM/VRAM
+CPU / GPU
+RAM / VRAM
 electricity
-latency
+latency / throughput
 hardware capacity
 operations
 ```
@@ -344,276 +248,166 @@ operations
 So:
 
 ```text
+Local ≠ free engineering
 Local = different cost model
-not zero engineering cost
 ```
 
 ---
 
-# 15. Practical Token/Context Experiment
+# 11. Minimal Context Experiment
 
-Use the same question three times.
+This lesson needs only a small experiment; the detailed evidence-engineering lab is owned by Module 2.
 
-## Version A — Minimal
+Compare:
+
+### Version A — Minimal
 
 ```text
 Why did the deployment fail?
 ```
 
-## Version B — Huge noisy context
-Include irrelevant lines and warnings.
-
-## Version C — Curated evidence
+### Version B — Curated evidence
 
 ```text
 [E1] Deployment failed during Terraform Apply.
-[E2] NSG rule aks-subnet-allow removed.
+[E2] NSG rule aks-subnet-allow was removed.
 [E3] AKS connectivity validation failed.
 ```
 
-Compare:
+Observe:
 
 ```text
-Relevance
-Unsupported claims
-Latency
-Output length
-Hosted usage metadata
+relevance
+unsupported assumptions
+output length
+latency / usage metadata where available
 ```
+
+Do not turn this lesson into a full context-cleaning lab; that belongs in Module 2 Lesson 7.
 
 ---
 
-# 16. Example Python Measurement
+# 12. Context Size and Security
 
-Hosted path:
+One foundational rule:
 
-```python
-response = client.responses.create(
-    model=model,
-    input=context,
-)
+> **Never send sensitive data simply because context capacity is available.**
 
-print(response.usage)
-print(response.output_text)
-```
-
-Do not assume exact token values across models/providers.
-
-For Ollama, runtime responses may expose their own evaluation/token-like counters depending on endpoint and version.
-
----
-
-# 17. Secret Redaction Before Context
-
-Never send secret just because model context has room.
-
-Bad:
+Example:
 
 ```text
 AZURE_CLIENT_SECRET=abc123
 ```
 
-Better:
+should be redacted before model input:
 
 ```text
 AZURE_CLIENT_SECRET=[REDACTED]
 ```
 
-Redaction should happen **before** sending data to model.
+The complete redaction and sensitive-context handling methodology is covered canonically in Module 2 Lesson 7 and later security modules.
 
 ---
 
-# 18. Chunking Preview
+# 13. Chunking Preview
 
-If knowledge/log data is too large:
+Very large knowledge sources may later be handled as:
 
 ```text
 Large Document
 → Split into chunks
+→ Embed/index chunks
 → Retrieve relevant chunks
-→ Send only top context
+→ Supply selected context
 ```
 
-This is foundation for Module 4/5 embeddings and RAG.
-
-Here we only learn the motivation.
+Here we only need the motivation. Detailed chunking belongs to **Module 4** and detailed RAG retrieval belongs to **Module 5**.
 
 ---
 
-# 19. Summarization Risk
+# 14. Common Beginner Mistakes
 
-Summarization reduces size but can lose detail.
-
-Bad:
-
-```text
-LLM summarizes log
-→ original source discarded
-→ later claim impossible to verify
-```
-
-Better:
-
-```text
-Original evidence preserved
-+ summary generated
-+ source IDs retained
-```
-
-Never let summary become the only evidence source if auditability matters.
+1. Treating a token as a word.
+2. Assuming context is unlimited.
+3. Sending complete logs because more data feels safer.
+4. Confusing context with permanent memory.
+5. Memorizing stale provider pricing.
+6. Treating local inference as zero-cost infrastructure.
+7. Re-teaching full context-engineering methods here instead of using the canonical Module 2 lesson.
 
 ---
 
-# 20. Context Budget Strategy
-
-A simple application policy could be:
-
-```text
-1. System instructions
-2. Current user question
-3. Highest-priority current evidence
-4. Limited reference knowledge
-5. Output budget
-```
-
-Drop:
-
-```text
-irrelevant chat
-repeated logs
-old unrelated incidents
-secrets
-```
-
----
-
-# 21. Failure Modes
-
-### Too little context
-Model guesses.
-
-### Too much context
-Noise and capacity/cost problems.
-
-### Wrong context
-Confident wrong answer.
-
-### Stale context
-Old state treated as current.
-
-### Untrusted context
-Prompt injection or poisoned data risk later.
-
-### Secret-containing context
-Security incident.
-
----
-
-# 22. Production Observability
-
-Track per request:
-
-```text
-input size/tokens
-output size/tokens
-latency
-model
-request count
-context source count
-retrieval score later
-error status
-```
-
-Why?
-
-```text
-Cost regression
-Latency regression
-Prompt/context bloat
-Model comparison
-```
-
----
-
-# 23. Common Beginner Mistakes
-
-1. Token = word.
-2. More context always better.
-3. Context window = permanent memory.
-4. Chat history = evidence.
-5. Runbook = current incident fact.
-6. Large log directly LLM ko dena.
-7. Secret redaction ignore karna.
-8. Summarization ke baad original source delete karna.
-9. Static provider pricing hard-code karna.
-10. Local inference ko costless system samajhna.
-
----
-
-# 24. Interview Q&A
+# 15. Interview Q&A
 
 ### Q1. What is a token?
-A model-processing unit derived from text/code.
+A model-processing unit derived from text/code by the model's tokenizer.
 
 ### Q2. What is a context window?
-The finite amount of tokenized information the model can consider for a request/conversation context, subject to model behavior.
+The finite amount of tokenized information a model can consider for a request/conversation context, subject to model behavior.
 
-### Q3. Why not send complete logs?
-They increase noise, token use, latency, secret risk and can bury relevant evidence.
+### Q3. Why not send complete DevOps logs?
+Because unnecessary volume can increase noise, latency, usage/cost and sensitive-data exposure while burying relevant evidence.
 
 ### Q4. Prompt engineering vs context engineering?
-Prompt engineering designs instructions; context engineering selects/prepares the information supplied for the task.
+Prompt engineering defines the task/instructions; context engineering selects and prepares the information supplied for that task.
 
-### Q5. Is conversation history evidence?
-Not automatically.
-
-### Q6. Why label evidence sources?
-For traceability, validation and citations.
-
-### Q7. Is local LLM zero-cost?
-No hosted per-call charge for local inference, but hardware and operational resources still cost.
-
-### Q8. How do you reduce context safely?
-Filter, normalize, redact, deduplicate, preserve provenance and retrieve only relevant information.
+### Q5. Is context the same as memory?
+No. Context is supplied for the current model interaction; application state and memory are separate application concepts.
 
 ---
 
-# 25. Revision Sheet
+# 16. Revision Sheet
 
 ```text
-Token = processing unit
-Input tokens = supplied text/context
+Token = model-processing unit
+Input tokens = supplied instructions/context
 Output tokens = generated content
 Context window = finite working capacity
-Context engineering = select/prepare useful information
-More context != more truth
-History != evidence
-Reference != current proof
+Context budget = how we allocate that capacity
+Prompt = what to do
+Context = what information to use
 ```
 
----
-
-# 26. Homework
-
-1. Take a sample log and create raw, trimmed and evidence-labeled versions.
-2. Run same prompt against all three.
-3. Compare output quality and latency.
-4. If using hosted API, inspect usage metadata.
-5. Identify one secret-like field and redact it before model input.
-6. Explain why old runbook cannot prove a current incident cause.
-
----
-
-# 27. Why Next Lesson?
-
-Ab hum relevant context model ko de sakte hain.
-
-But free-text response automation ke liye unreliable ho sakta hai.
-
-Next problem:
+### Canonical ownership map
 
 ```text
-Model output ko predictable machine-readable contract me kaise laayein?
+Module 1
+→ Token / context mechanics + usage awareness
+
+Module 2
+→ Context-engineering methodology
+
+Module 4
+→ Embedding/vector representation
+
+Module 5
+→ RAG retrieval + context construction for generation
 ```
 
-➡️ **Lesson 7 — Structured Output & Validation**
+---
+
+# 17. Homework
+
+1. Explain why 1 word is not necessarily 1 token.
+2. Explain why context should be treated as a finite budget.
+3. Compare a one-line prompt with a small evidence-labeled context bundle.
+4. Explain why Module 2 is the canonical home for detailed context engineering.
+5. Identify one type of sensitive data that should never be sent to a model without appropriate controls.
+
+---
+
+# ➡️ Why Next Lesson?
+
+We now know how requests, tokens and context capacity behave.
+
+But free-form model output is difficult to validate reliably in an application.
+
+So the next gap is:
+
+```text
+Free-form model output
+        ↓
+Need predictable structure
+        ↓
+Lesson 7 — Structured Output & Validation
+```
