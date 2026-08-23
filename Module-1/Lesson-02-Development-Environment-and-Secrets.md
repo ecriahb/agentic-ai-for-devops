@@ -26,6 +26,25 @@ Is lesson ke end tak aap clearly samjhoge:
 
 ---
 
+# 🧭 Where This Lesson Fits
+
+```text
+Lesson 01
+UI vs API
+      ↓
+Lesson 02
+Local Python environment + secret hygiene
+      ↓
+Lesson 03
+Hosted API setup
+```
+
+**This lesson owns local development setup and the first secret-hygiene pattern needed to run Module 1. It does not own enterprise identity architecture, centralized secret management, authorization or agent security; those are covered later in Modules 10–11.**
+
+The `.env` pattern here is a local-learning convenience, not a production secret-management architecture.
+
+---
+
 # 🧠 Why This Topic Now?
 
 Lesson 1 me samjha:
@@ -661,6 +680,16 @@ Secret Manager / Service
 Application
 ```
 
+Benefits:
+
+```text
+No hard-coded secret
+Central rotation
+Access control
+Auditability
+Least privilege
+```
+
 ---
 
 ## 22. Azure DevOps / Enterprise Mapping
@@ -687,6 +716,8 @@ Auditability
 Least privilege
 ```
 
+Later Module 10–11 lessons cover the deeper security and identity architecture. This lesson only establishes the local-to-production distinction.
+
 ---
 
 # PART 12 — Secret vs Identity
@@ -710,7 +741,7 @@ Managed Identity
 = Azure-managed workload identity
 ```
 
-This becomes very important in Lesson 5 when real tools access Azure.
+This becomes very important in later tool/security modules. We only need the distinction here.
 
 ---
 
@@ -865,4 +896,4 @@ Secret loading ✅
 
 Ab actual AI API request bhej sakte hain.
 
-➡️ **Next: Lesson 03 — Our First Real AI API Call**
+➡️ **Next: Lesson 03 — OpenAI Cloud API Setup**
