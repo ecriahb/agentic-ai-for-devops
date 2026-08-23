@@ -6,6 +6,24 @@
 
 > **Canonical ownership:** Module-2 is the definitive course module for general Prompt Engineering. Module-0 introduces the idea; later modules apply it to RAG, orchestration, agents and security instead of repeating the full theory.
 
+## Where This Lesson Fits
+
+```text
+Module 0
+→ introduces what prompts are and why model behavior depends on instructions
+        ↓
+Module 1
+→ uses prompts inside API/tool exercises
+        ↓
+Module 2 Lesson 1
+→ owns the general prompt-engineering mental model
+        ↓
+Lesson 2
+→ turns that model into a repeatable five-part contract
+```
+
+**Scope:** This lesson explains *why* prompt engineering matters and the core anatomy. Detailed framework construction belongs to Lesson 2; advanced hallucination/context/evaluation topics belong to Lessons 6–10.
+
 ---
 
 # 🎯 Lesson Goal
@@ -79,6 +97,8 @@ CONSTRAINTS
   ↓
 OUTPUT CONTRACT
 ```
+
+This is only the **mental model** here. Lesson 2 owns the detailed construction and trade-offs of each block.
 
 Example:
 
@@ -246,7 +266,7 @@ Return:
 - Recommended Next Checks
 ```
 
-Later structured-output lessons can validate the machine-level schema.
+Detailed machine-level structured-output validation belongs to **Lesson 7**; this lesson only introduces the concept of an output contract.
 
 Remember:
 
@@ -268,7 +288,9 @@ Context Engineering
 → selecting, transforming, prioritizing and budgeting information
 ```
 
-Module-2 teaches the general principles. Later modules apply them to RAG, orchestration and agents.
+**Lesson 1 introduces this distinction. Lesson 7 owns the detailed context-engineering methodology.**
+
+Module-2 teaches the general prompting principles. Later modules apply them to RAG, orchestration and agents.
 
 ---
 
