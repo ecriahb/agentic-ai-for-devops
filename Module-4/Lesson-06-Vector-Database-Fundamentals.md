@@ -13,6 +13,7 @@ Is lesson ke end tak aap samjhoge:
 - vector index kya hai
 - exact vs approximate nearest neighbor
 - metadata ka role
+- pre-filter vs post-filter retrieval
 - persistence, updates aur re-indexing
 - Chroma/FAISS ka role
 - production design questions
@@ -96,6 +97,147 @@ environment = prod
 AND
 semantic similarity to "AKS network issue"
 ```
+
+Both operations solve different problems:
+
+```text
+Metadata filter  → exact constraint / eligibility
+Vector search    → semantic relevance
+```
+
+---
+
+# PART 3.1 — Pre-filter vs Post-filter
+
+When a vector retrieval system supports metadata filtering, an important design question is **when the metadata constraint is applied relative to vector candidate search**.
+
+## Pre-filter
+
+Conceptually, the metadata constraint is applied **before the vector nearest-neighbor search**:
+
+```text
+All stored records
+       ↓
+Metadata filter
+(environment=production
+ AND service=payment)
+       ↓
+Eligible candidates
+       ↓
+Vector similarity search
+       ↓
+Top-K
+```
+
+Hinglish intuition:
+
+> **Pehle decide karo kaunse documents allowed hain, phir unmein semantic search karo.**
+
+Example:
+
+```text
+10,000 documents
+        ↓
+production + payment
+        ↓
+800 eligible documents
+        ↓
+vector search
+        ↓
+Top-K relevant documents
+```
+
+## Post-filter
+
+Conceptually, vector candidates are selected first and the metadata constraint is applied **afterward**:
+
+```text
+All stored records
+       ↓
+Vector search
+       ↓
+Top candidate set
+       ↓
+Metadata filter
+       ↓
+Final results
+```
+
+Hinglish intuition:
+
+> **Pehle semantic candidates nikalo, phir un candidates ko metadata condition se filter karo.**
+
+### Why does this matter?
+
+Suppose:
+
+```text
+Requested Top-K = 5
+```
+
+A post-filter implementation may find five highly similar documents, but after applying:
+
+```text
+environment = production
+```
+
+some or all of them may be removed. The final result count can therefore be smaller than the requested K unless the system retrieves additional candidates or uses another strategy.
+
+This is one reason filtering semantics matter when designing production retrieval.
+
+### Important: This is not a universal rule for every vector database
+
+**Pre-filter vs post-filter describes retrieval strategies; it should not be assumed that every product implements filtering in exactly one of these ways.** Actual behavior depends on the database, index type, query engine and configuration.
+
+So in production, always verify the library/database's official documentation rather than assuming that a metadata filter automatically means pre-filtering.
+
+### DevOps Example
+
+Suppose the knowledge base contains:
+
+```text
+production / payment / critical
+staging    / payment / high
+production / orders  / high
+production / payment / warning
+```
+
+Query:
+
+```text
+"Which NSG rule is blocking production payment traffic?"
+```
+
+A useful retrieval constraint is:
+
+```text
+environment = production
+service = payment
+```
+
+Then semantic similarity ranks the eligible documents.
+
+This gives us the key mental model:
+
+```text
+Hard constraint
+      +
+Semantic relevance
+      ↓
+More controlled retrieval
+```
+
+### Pre-filter vs Post-filter — Quick Comparison
+
+| Aspect | Pre-filter | Post-filter |
+|---|---|---|
+| Metadata condition | Applied before candidate search | Applied after candidate search |
+| Candidate pool | Restricted first | Starts broader |
+| Possible final results | More predictable with respect to filter | Can be fewer than requested K |
+| Main concern | How efficiently the filtered search is supported | Need enough candidates after filtering |
+| Universal behavior? | ❌ No | ❌ No |
+
+> **Interview point:** Don't say "pre-filter is always better." The correct answer is that filtering strategy affects recall, latency and result count, and the actual semantics depend on the vector system and index implementation.
 
 ---
 
@@ -276,6 +418,7 @@ Top relevant operational knowledge
 4. Model change ke baad incompatible old vectors use karna.
 5. Authorization ko metadata filter se replace karna.
 6. Index freshness monitor na karna.
+7. Filtering behavior ko database documentation verify kiye bina assume karna.
 
 ---
 
@@ -287,6 +430,7 @@ Before choosing a vector solution, ask:
 How many vectors?
 Required latency?
 Metadata filtering?
+Pre-filter or post-filter semantics?
 Persistence?
 Backups?
 Multi-tenancy?
@@ -310,6 +454,15 @@ Approximate nearest-neighbor search trades some exactness/recall for faster scal
 **Q: Is FAISS a full database?**  
 It is primarily a vector similarity search/indexing library, so broader persistence/metadata/application lifecycle may need separate handling.
 
+**Q: What is pre-filtering?**  
+Conceptually, applying metadata constraints before vector candidate search so only eligible records participate in retrieval.
+
+**Q: What is post-filtering?**  
+Conceptually, applying metadata constraints after vector candidate selection; this can reduce the number of final results available after filtering.
+
+**Q: Is pre-filtering always better than post-filtering?**  
+No. The tradeoffs depend on the database, index, filtering implementation, latency requirements and desired recall/result count.
+
 ---
 
 # PART 14 — Revision
@@ -321,11 +474,23 @@ Embeddings
  ↓
 Vector Store / Index
  ↓
+Metadata Constraints
+ ↓
+Pre-filter / Post-filter semantics
+ ↓
 Query Embedding
  ↓
 Nearest Neighbor Search
  ↓
 Top-K
+```
+
+Remember:
+
+```text
+Metadata filtering = exact constraint
+Vector similarity  = semantic relevance
+Pre/Post filtering = when the constraint participates in retrieval
 ```
 
 ---
@@ -335,6 +500,8 @@ Top-K
 1. Normal SQL filter aur vector similarity search ka difference explain karo.
 2. Exact vs approximate nearest neighbor ka tradeoff likho.
 3. Vector record me text + metadata preserve kyu karna chahiye?
+4. Pre-filter aur post-filter ka flow diagram banao.
+5. Explain why a post-filtered Top-K search can return fewer than K final documents.
 
 ---
 
