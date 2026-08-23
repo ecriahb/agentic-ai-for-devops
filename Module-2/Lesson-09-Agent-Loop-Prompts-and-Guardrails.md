@@ -4,6 +4,27 @@
 
 > **Agent ko “keep trying until fixed” bolna unsafe hai. Tool choice, stop conditions, budgets aur execution authority host-controlled hone chahiye.**
 
+> **Canonical scope:** Module 2 owns the **prompt/guardrail design** for an agent loop. Module 1 Lesson 9 owns the basic agent implementation and core loop mechanics; Modules 8–9 own production stateful and multi-agent orchestration. This lesson must not become a second agent-framework course.
+
+## Where This Lesson Fits
+
+```text
+Module 1 Lesson 8
+→ tool calling
+        ↓
+Module 1 Lesson 9
+→ basic agent loop implementation
+        ↓
+Module 2 Lesson 9
+→ prompt design + guardrails for that loop
+        ↓
+Module 8
+→ stateful graph orchestration
+        ↓
+Module 9
+→ multi-agent coordination
+```
+
 ---
 
 # 🎯 Lesson Goal
@@ -68,6 +89,8 @@ RBAC
 iteration budget
 approval
 ```
+
+The implementation details of this loop were already introduced in **Module 1 Lesson 9**. Here we focus on the **instruction and control policy** that should sit around it.
 
 ---
 
@@ -352,6 +375,8 @@ Stop / Loop
 ```
 
 Later LangGraph makes this state/routing explicit.
+
+For full implementation mechanics see **Module 1 Lesson 9**. For graph-based persistence/routing, continue to **Module 8**.
 
 ---
 
